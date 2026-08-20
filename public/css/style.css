@@ -1,20 +1,22 @@
 :root {
-  --primary: #7c5cff;
-  --bg: #f8f7fc;
+  --bg: #f7f6f3;
   --card-bg: #ffffff;
-  --text: #1e1b2e;
-  --text-muted: #6b6580;
-  --border: #e8e5f2;
+  --text: #17171a;
+  --text-muted: #6b6b70;
+  --border: #e6e4df;
+  --ink: #17171a;
+  --primary: #3d3a34;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
 .container {
@@ -23,50 +25,64 @@ body {
   padding: 0 20px;
 }
 
+/* 헤더 — 그라데이션 없이 절제된 브랜드 톤 */
 .site-header {
-  background: linear-gradient(135deg, var(--primary), #5b3fd6);
-  color: white;
-  padding: 40px 0 32px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 36px 0 28px;
   text-align: center;
 }
 
 .quiz-header {
-  background: linear-gradient(135deg, var(--accent, var(--primary)), #333);
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  border-top: 4px solid var(--accent, var(--primary));
 }
 
 .logo {
-  color: white;
-  font-size: 1.3rem;
+  color: var(--text);
+  font-size: 1.2rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
   text-decoration: none;
 }
 
 .tagline {
   margin: 10px 0 0;
-  font-size: 0.92rem;
-  opacity: 0.92;
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }
 
-.quiz-hero-emoji {
-  font-size: 2.6rem;
-  margin-top: 14px;
+.quiz-hero-badge {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px auto 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent, var(--primary)) 14%, white);
+  font-size: 1.7rem;
 }
 
 .site-header h1 {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   margin: 6px 0 4px;
+  letter-spacing: -0.01em;
 }
 
 .ad-slot { margin: 20px auto; }
 
 .ad-placeholder {
-  background: #f1eefa;
+  background: #fbfaf8;
   border: 1px dashed var(--border);
   color: var(--text-muted);
   text-align: center;
-  padding: 20px;
-  font-size: 0.85rem;
-  border-radius: 8px;
+  padding: 18px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 10px;
 }
 
 main { padding-bottom: 40px; }
@@ -75,84 +91,99 @@ main { padding-bottom: 40px; }
 .quiz-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  margin-top: 20px;
+  gap: 14px;
+  margin-top: 22px;
 }
 
 .quiz-card {
   display: block;
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-top: 4px solid var(--accent, var(--primary));
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 22px;
   text-decoration: none;
   color: var(--text);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 2px rgba(20, 18, 12, 0.03);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .quiz-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 22px rgba(20, 18, 12, 0.08);
+  border-color: var(--accent);
 }
 
-.quiz-card-emoji { font-size: 2rem; margin-bottom: 8px; }
+.quiz-card-badge {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 14%, white);
+  font-size: 1.3rem;
+  margin-bottom: 12px;
+}
 
-.quiz-card h2 { font-size: 1.05rem; margin: 0 0 8px; }
+.quiz-card h2 { font-size: 1.02rem; margin: 0 0 8px; letter-spacing: -0.01em; }
 
 .quiz-card p {
-  font-size: 0.86rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
   margin: 0 0 14px;
 }
 
 .quiz-card-cta {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: var(--accent, var(--primary));
+  color: var(--accent);
 }
 
 /* 카드 공통 */
 .tool-card, .info-card, .result-card {
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 28px;
   margin-top: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(20, 18, 12, 0.03);
 }
 
-.tool-desc { color: var(--text-muted); font-size: 0.92rem; margin-bottom: 20px; }
+.tool-desc { color: var(--text-muted); font-size: 0.92rem; margin-bottom: 22px; }
 
 .quiz-btn {
   display: inline-block;
   width: 100%;
-  padding: 14px;
-  background: var(--accent, var(--primary));
+  padding: 15px;
+  background: var(--ink);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 11px;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   text-align: center;
   text-decoration: none;
   box-sizing: border-box;
+  transition: opacity 0.15s ease;
 }
+
+.quiz-btn:hover { opacity: 0.85; }
 
 .quiz-btn-outline {
   background: white;
-  color: var(--accent, var(--primary));
-  border: 2px solid var(--accent, var(--primary));
-  margin-top: 10px;
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+  margin-top: 8px;
 }
+
+.quiz-btn-outline:hover { border-color: var(--ink); opacity: 1; }
 
 /* 퀴즈 진행 */
 .quiz-progress {
   background: var(--border);
   border-radius: 999px;
-  height: 8px;
+  height: 6px;
   overflow: hidden;
   margin-bottom: 10px;
 }
@@ -165,12 +196,12 @@ main { padding-bottom: 40px; }
 }
 
 .quiz-question-count {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   margin: 0 0 10px;
 }
 
-.quiz-app h2 { font-size: 1.15rem; margin: 0 0 18px; }
+.quiz-app h2 { font-size: 1.1rem; margin: 0 0 18px; letter-spacing: -0.01em; }
 
 .quiz-options {
   display: flex;
@@ -179,32 +210,49 @@ main { padding-bottom: 40px; }
 }
 
 .quiz-option-btn {
-  padding: 14px 16px;
-  border: 2px solid var(--border);
+  padding: 15px 16px;
+  border: 1.5px solid var(--border);
   background: white;
-  border-radius: 10px;
-  font-size: 0.96rem;
+  border-radius: 11px;
+  font-size: 0.95rem;
   text-align: left;
   cursor: pointer;
+  color: var(--text);
   transition: border-color 0.15s, background 0.15s;
 }
 
 .quiz-option-btn:hover {
-  border-color: var(--accent, var(--primary));
-  background: #faf9ff;
+  border-color: var(--ink);
+  background: #faf9f7;
 }
 
 /* 결과 카드 */
 .result-card { text-align: center; }
-.result-eyebrow { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 6px; }
-.result-emoji { font-size: 3.4rem; margin: 6px 0; }
-.result-card h1 { font-size: 1.5rem; margin: 4px 0 14px; color: var(--accent, var(--primary)); }
-.result-desc { font-size: 0.96rem; color: var(--text); margin: 0 0 22px; text-align: left; }
+.result-eyebrow {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+.result-badge {
+  width: 84px;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 14%, white);
+  font-size: 2.4rem;
+}
+.result-card h1 { font-size: 1.45rem; margin: 4px 0 14px; letter-spacing: -0.01em; color: var(--text); }
+.result-desc { font-size: 0.96rem; color: var(--text); margin: 0 0 24px; text-align: left; }
 .result-actions { display: flex; flex-direction: column; gap: 4px; }
 
-.info-card h2 { font-size: 1.05rem; margin: 0 0 10px; }
+.info-card h2 { font-size: 1.02rem; margin: 0 0 10px; }
 .info-card p { font-size: 0.9rem; color: var(--text-muted); }
-.info-card a { color: var(--primary); font-weight: 600; text-decoration: none; }
+.info-card a { color: var(--ink); font-weight: 600; text-decoration: none; }
 
 .site-footer {
   border-top: 1px solid var(--border);
@@ -226,9 +274,9 @@ main { padding-bottom: 40px; }
   margin: 0 10px;
 }
 
-.footer-nav a:hover { color: var(--primary); }
+.footer-nav a:hover { color: var(--ink); }
 
 @media (max-width: 480px) {
   .tool-card, .info-card, .result-card { padding: 20px; }
-  .site-header { padding: 32px 0 24px; }
+  .site-header { padding: 28px 0 22px; }
 }

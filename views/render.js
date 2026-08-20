@@ -27,6 +27,9 @@ function baseLayout({ title, description, ogUrl, bodyClass, content, themeColor 
 <meta name="twitter:title" content="${escapeHtml(title)}" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
 ${themeColor ? `<meta name="theme-color" content="${themeColor}" />` : ''}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body class="${bodyClass || ''}">
@@ -50,7 +53,7 @@ function renderHome(quizzes) {
     .map(
       (q) => `
       <a href="/q/${q.id}" class="quiz-card" style="--accent:${q.themeColor}">
-        <div class="quiz-card-emoji">${q.emoji}</div>
+        <div class="quiz-card-badge">${q.emoji}</div>
         <h2>${escapeHtml(q.title)}</h2>
         <p>${escapeHtml(q.subtitle)}</p>
         <span class="quiz-card-cta">診断スタート →</span>
@@ -93,7 +96,7 @@ function renderQuizPage(quiz) {
   <header class="site-header quiz-header" style="--accent:${quiz.themeColor}">
     <div class="container">
       <a href="/" class="logo">しんだんラボ</a>
-      <div class="quiz-hero-emoji">${quiz.emoji}</div>
+      <div class="quiz-hero-badge">${quiz.emoji}</div>
       <h1>${escapeHtml(quiz.title)}</h1>
       <p class="tagline">${escapeHtml(quiz.subtitle)}</p>
     </div>
@@ -146,7 +149,7 @@ function renderResultPage(quiz, resultKey) {
   <main class="container">
     <section class="tool-card result-card" style="--accent:${quiz.themeColor}">
       <p class="result-eyebrow">${escapeHtml(quiz.title)} 結果</p>
-      <div class="result-emoji">${result.emoji}</div>
+      <div class="result-badge">${result.emoji}</div>
       <h1>${escapeHtml(result.title)}</h1>
       <p class="result-desc">${escapeHtml(result.desc)}</p>
 

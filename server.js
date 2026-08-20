@@ -2,7 +2,20 @@ const express = require('express');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const quizzes = require('./data/quizzes');
-const { renderHome, renderQuizPage, renderResultPage } = require('./views/render');
+const fortuneTools = require('./data/fortune-tools');
+const { STEM_KEYS, BLOOD_TYPES, calcShichuuStem, calcSeimeiHandan } = require('./lib/fortune');
+const {
+  renderHome,
+  renderQuizPage,
+  renderResultPage,
+  renderShichuuForm,
+  renderShichuuResult,
+  renderKetsuekiForm,
+  renderKetsuekiResult,
+  renderMeimeiForm,
+  renderMeimeiResult,
+  SITE_URL,
+} = require('./views/render');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,10 +34,35 @@ function findQuiz(id) {
   return quizzes.find((q) => q.id === id);
 }
 
+// --- ホーム ---
 app.get('/', (req, res) => {
-  res.send(renderHome(quizzes));
+  res.send(renderHome(quizzes, fortuneTools));
 });
 
+// --- SEO: robots.txt / sitemap.xml ---
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send(`User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  const staticPaths = [
+    '/',
+    '/shichuu',
+    '/ketsueki',
+    '/meimei',
+    ...quizzes.map((q) => `/q/${q.id}`),
+    '/privacy.html',
+    '/terms.html',
+  ];
+  const urls = staticPaths
+    .map((p) => `  <url><loc>${SITE_URL}${p}</loc></url>`)
+    .join('\n');
+  res.type('application/xml');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`);
+});
+
+// --- タイプ診断（選択式クイズ） ---
 app.get('/q/:id', (req, res) => {
   const quiz = findQuiz(req.params.id);
   if (!quiz) return res.redirect('/');
@@ -35,6 +73,82 @@ app.get('/q/:id/r/:resultKey', (req, res) => {
   const quiz = findQuiz(req.params.id);
   if (!quiz || !quiz.results[req.params.resultKey]) return res.redirect('/');
   res.send(renderResultPage(quiz, req.params.resultKey));
+});
+
+// --- 簡易四柱推命（十干タイプ診断） ---
+app.get('/shichuu', (req, res) => {
+  res.send(renderShichuuForm());
+});
+
+app.get('/shichuu/compute', (req, res) => {
+  const year = parseInt(req.query.year, 10);
+  const month = parseInt(req.query.month, 10);
+  const day = parseInt(req.query.day, 10);
+
+  if (
+    !Number.isInteger(year) || year < 1900 || year > 2026 ||
+    !Number.isInteger(month) || month < 1 || month > 12 ||
+    !Number.isInteger(day) || day < 1 || day > 31
+  ) {
+    return res.redirect('/shichuu');
+  }
+
+  const { stemKey } = calcShichuuStem(year, month, day);
+  res.redirect(`/shichuu/r/${stemKey}`);
+});
+
+app.get('/shichuu/r/:stemKey', (req, res) => {
+  if (!STEM_KEYS.includes(req.params.stemKey)) return res.redirect('/shichuu');
+  res.send(renderShichuuResult(req.params.stemKey));
+});
+
+// --- 血液型占い ---
+app.get('/ketsueki', (req, res) => {
+  res.send(renderKetsuekiForm());
+});
+
+app.get('/ketsueki/compute', (req, res) => {
+  const type = String(req.query.type || '').toUpperCase();
+  const partner = String(req.query.partner || '').toUpperCase();
+
+  if (!BLOOD_TYPES.includes(type)) return res.redirect('/ketsueki');
+
+  if (partner && BLOOD_TYPES.includes(partner)) {
+    return res.redirect(`/ketsueki/r/${type}/${partner}`);
+  }
+  res.redirect(`/ketsueki/r/${type}`);
+});
+
+app.get('/ketsueki/r/:type', (req, res) => {
+  const type = req.params.type.toUpperCase();
+  if (!BLOOD_TYPES.includes(type)) return res.redirect('/ketsueki');
+  res.send(renderKetsuekiResult(type, null));
+});
+
+app.get('/ketsueki/r/:type/:partner', (req, res) => {
+  const type = req.params.type.toUpperCase();
+  const partner = req.params.partner.toUpperCase();
+  if (!BLOOD_TYPES.includes(type) || !BLOOD_TYPES.includes(partner)) return res.redirect('/ketsueki');
+  res.send(renderKetsuekiResult(type, partner));
+});
+
+// --- 姓名判断 ---
+app.get('/meimei', (req, res) => {
+  res.send(renderMeimeiForm());
+});
+
+app.get('/meimei/result', (req, res) => {
+  const sei = String(req.query.sei || '').trim();
+  const mei = String(req.query.mei || '').trim();
+  if (!sei || !mei) return res.redirect('/meimei');
+  res.redirect(`/meimei/r/${encodeURIComponent(sei)}/${encodeURIComponent(mei)}`);
+});
+
+app.get('/meimei/r/:sei/:mei', (req, res) => {
+  const sei = decodeURIComponent(req.params.sei);
+  const mei = decodeURIComponent(req.params.mei);
+  const calcResult = calcSeimeiHandan(sei, mei);
+  res.send(renderMeimeiResult(sei, mei, calcResult));
 });
 
 // 不明なパスはホームへリダイレクト

@@ -6,9 +6,12 @@ const {
   SEIMEI_GAKU_MEANING,
   seimeiSummary,
 } = require('../data/fortune-content');
+const { STEM_KEYS } = require('../lib/fortune');
+const { MEIMEI_FEATURED } = require('../data/seo-longtail');
 
 const SITE_NAME = 'しんだんラボ';
 const SITE_URL = process.env.SITE_URL || 'https://example.onrender.com'; // デプロイ後、実際のドメインに置き換えてください
+const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION || '';
 
 function escapeHtml(str) {
   return String(str)
@@ -27,6 +30,7 @@ function baseLayout({ title, description, ogUrl, bodyClass, content, themeColor 
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(ogUrl)}" />
+${GOOGLE_SITE_VERIFICATION ? `<meta name="google-site-verification" content="${escapeHtml(GOOGLE_SITE_VERIFICATION)}" />` : ''}
 <meta property="og:type" content="website" />
 <meta property="og:locale" content="ja_JP" />
 <meta property="og:site_name" content="${escapeHtml(SITE_NAME)}" />
@@ -343,7 +347,16 @@ function renderShichuuForm() {
         </div>
       </div>
       <button type="submit" class="quiz-btn">診断する</button>
-    </form>`;
+    </form>
+    <div class="link-grid">
+      <p class="link-grid-title">十干タイプ一覧から見る</p>
+      <div class="link-grid-items">
+        ${STEM_KEYS.map((k) => {
+          const s = STEM_CONTENT[k];
+          return `<a href="/shichuu/r/${k}" class="link-grid-item">${escapeHtml(s.emoji)} ${escapeHtml(s.title)}</a>`;
+        }).join('\n        ')}
+      </div>
+    </div>`;
 
   return formPageShell({
     accent: SHICHUU_ACCENT,
@@ -412,7 +425,21 @@ function renderKetsuekiForm() {
         </select>
       </div>
       <button type="submit" class="quiz-btn">診断する</button>
-    </form>`;
+    </form>
+    <div class="link-grid">
+      <p class="link-grid-title">血液型の組み合わせ相性から見る</p>
+      <div class="link-grid-items">
+        ${(() => {
+          const links = [];
+          BLOOD_TYPES.forEach((t, i) => {
+            BLOOD_TYPES.forEach((p, j) => {
+              if (j >= i) links.push(`<a href="/ketsueki/r/${t}/${p}" class="link-grid-item">${t}型×${p}型</a>`);
+            });
+          });
+          return links.join('\n        ');
+        })()}
+      </div>
+    </div>`;
 
   return formPageShell({
     accent: KETSUEKI_ACCENT,
@@ -497,7 +524,16 @@ function renderMeimeiForm(errorMessage) {
         <input type="text" name="mei" id="mei" placeholder="例：太郎" required />
       </div>
       <button type="submit" class="quiz-btn">診断する</button>
-    </form>`;
+    </form>
+    <div class="link-grid">
+      <p class="link-grid-title">人気の組み合わせ例を見る</p>
+      <div class="link-grid-items">
+        ${MEIMEI_FEATURED.map(
+          ({ sei, mei }) =>
+            `<a href="/meimei/r/${encodeURIComponent(sei)}/${encodeURIComponent(mei)}" class="link-grid-item">${escapeHtml(sei)} ${escapeHtml(mei)}</a>`
+        ).join('\n        ')}
+      </div>
+    </div>`;
 
   return formPageShell({
     accent: MEIMEI_ACCENT,

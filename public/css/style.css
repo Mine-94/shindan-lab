@@ -404,3 +404,34 @@ main { padding-bottom: 40px; }
   .site-header { padding: 28px 0 22px; }
   .form-select-group { grid-template-columns: 1fr; }
 }
+
+/* SEO内部リンクグリッド（フォーム画面の関連結果ページ一覧） */
+.link-grid {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.link-grid-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+}
+.link-grid-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.link-grid-item {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--text);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  text-decoration: none;
+}
+.link-grid-item:hover {
+  border-color: var(--accent, var(--border));
+}

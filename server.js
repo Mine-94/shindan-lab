@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const quizzes = require('./data/quizzes');
 const fortuneTools = require('./data/fortune-tools');
 const { STEM_KEYS, BLOOD_TYPES, calcShichuuStem, calcSeimeiHandan } = require('./lib/fortune');
+const { allMeimeiCombos } = require('./data/seo-longtail');
 const {
   renderHome,
   renderQuizPage,
@@ -22,7 +23,7 @@ const PORT = process.env.PORT || 3000;
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
+  max: 300, // 静的リソース(css/js)もこのリミッターを通過するため、1ページ閲覧だけで複数リクエストを消費します。
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -55,7 +56,33 @@ app.get('/sitemap.xml', (req, res) => {
     '/privacy.html',
     '/terms.html',
   ];
-  const urls = staticPaths
+
+  // 十干タイプ診断: /shichuu/r/:stemKey (10件) — 既存ルートだが従来sitemapから漏れていた
+  const shichuuPaths = STEM_KEYS.map((k) => `/shichuu/r/${k}`);
+
+  // 血液型占い: /ketsueki/r/:type (4件) + /ketsueki/r/:type/:partner (16件、A-A等の同型含む全組合せ)
+  const ketsuekiSinglePaths = BLOOD_TYPES.map((t) => `/ketsueki/r/${t}`);
+  const ketsuekiPairPaths = [];
+  BLOOD_TYPES.forEach((t) => {
+    BLOOD_TYPES.forEach((p) => {
+      ketsuekiPairPaths.push(`/ketsueki/r/${t}/${p}`);
+    });
+  });
+
+  // 姓名判断ロングテール: 人気の姓×名の組合せ + 有名人（52件、data/seo-longtail.js参照）
+  const meimeiPaths = allMeimeiCombos().map(
+    ({ sei, mei }) => `/meimei/r/${encodeURIComponent(sei)}/${encodeURIComponent(mei)}`
+  );
+
+  const allPaths = [
+    ...staticPaths,
+    ...shichuuPaths,
+    ...ketsuekiSinglePaths,
+    ...ketsuekiPairPaths,
+    ...meimeiPaths,
+  ];
+
+  const urls = allPaths
     .map((p) => `  <url><loc>${SITE_URL}${p}</loc></url>`)
     .join('\n');
   res.type('application/xml');

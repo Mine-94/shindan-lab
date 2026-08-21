@@ -53,12 +53,16 @@ npm start
 2. Renderダッシュボードで **New > Web Service** からリポジトリを接続。
 3. Build Command: `npm install`、Start Command: `npm start`。
 4. デプロイ後に発行された実際のドメインを `SITE_URL` 環境変数として設定してください。Render環境変数に `SITE_URL=https://実際のドメイン` の形式で追加してください。**og:url / twitter:card / サイトマップ / robots.txt すべてこの値を使うため必須です。**
+5. （任意・推奨）Google Search Consoleでサイトを登録後、「その他の方法 > HTMLタグ」で発行される`content`の値を `GOOGLE_SITE_VERIFICATION` 環境変数に設定すると、所有権確認タグが自動で出力されます。
 
 ## 7. SEO関連
 
-- `/sitemap.xml`・`/robots.txt` はサーバーが `SITE_URL` を使って自動生成します（静的ファイルではないので手動編集不要）。姓名判断の結果ページのような無限に生成されるロングテールページはサイトマップに含まれませんが、内部リンクを辿ってGoogleにクロールされる想定です。
+- `/sitemap.xml`・`/robots.txt` はサーバーが `SITE_URL` を使って自動生成します（静的ファイルではないので手動編集不要）。
+- **2026年8月のSEO修正**: `/ketsueki/r/:type`（4件）・`/ketsueki/r/:type/:partner`（16件）・`/shichuu/r/:stemKey`（10件）が既存コードに存在するにもかかわらずsitemapから漏れていたバグを修正しました（`일본-SEO-키워드-리서치.md` で発見）。加えて `data/seo-longtail.js` に人気の姓5種×人気の名前10種（2025年明治安田生命ランキング由来）+著名人2組=52件の姓名判断ロングテールURLを定義し、sitemapに追加しました。合計、sitemap内のURL数は静的9件+十干10件+血液型単4件+血液型ペア16件+姓名判断52件=91件です。
+- 各フォーム画面（`/shichuu` `/ketsueki` `/meimei`）に、上記の動的結果ページへの内部リンクグリッドを追加しました（クローラビリティ向上 + ユーザーの再訪導線）。
 - 各ページに `canonical` タグを設定済みです。
 - 姓名判断・血液型占い・十干タイプの各結果ページは、選択式クイズより長めの説明文を入れてSEO上のコンテンツの厚みを持たせています。
+- Google Search Console所有権確認用の `<meta name="google-site-verification">` タグを、環境変数 `GOOGLE_SITE_VERIFICATION` を設定すると自動出力するようにしました（未設定時は何も出ません）。Search Consoleの「その他の方法 > HTMLタグ」で取得した`content`の値だけをRenderの環境変数に設定してください。
 
 ## 8. 広告（AdSense等）連携
 
@@ -74,7 +78,16 @@ npm start
 
 ## 10. 今後の検討事項
 
-- 姓名判断の人気名前ページの事前生成（プログラマティックSEO）
 - 診断結果の画像カード自動生成（Instagram Stories向け）
 - アフィリエイトプログラム（ヴェルニ・カリス等）への実際の登録とリンク差し替え
 - 実運用後のAdSense/アフィリエイト実測データをリサーチ文書に反映
+- PR TIMESは個人運営者は対象外（無料枠は設立2年以内の法人＋フォロワー3人以上が条件、一般利用は1配信¥30,000+税）と判明したため、プレスリリース経由の集客は当面見送り
+- Google Search Console・Bing Webmasterへの実登録（`GOOGLE_SITE_VERIFICATION`環境変数の値を発行して設定）
+
+## 11. テスト
+
+`run_tests.sh` がサーバーを一時ポート（3011）で起動し、ホーム/クイズ/十干タイプ/血液型/姓名判断/sitemapの動的URL網羅などを自動検証してサーバーを片付けます。`server.js`や`views/render.js`、`data/seo-longtail.js`を修正した後は実行することを推奨します。
+
+```bash
+./run_tests.sh
+```

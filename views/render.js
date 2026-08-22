@@ -1,6 +1,7 @@
 const {
   STEM_CONTENT,
   BLOOD_CONTENT,
+  BLOOD_COMPAT_CONTENT,
   BLOOD_COMPAT_TEXT,
   COMPAT_LEVEL_LABEL,
   SEIMEI_GAKU_MEANING,
@@ -25,7 +26,11 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function baseLayout({ title, description, ogUrl, bodyClass, content, themeColor }) {
+function safeJsonLd(data) {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
+function baseLayout({ title, description, ogUrl, bodyClass, content, themeColor, structuredData }) {
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -51,6 +56,7 @@ ${themeColor ? `<meta name="theme-color" content="${themeColor}" />` : ''}
 <link rel="stylesheet" href="/css/style.css" />
 ${GA_MEASUREMENT_ID ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${escapeHtml(GA_MEASUREMENT_ID)}"></script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n  gtag('config', ${JSON.stringify(GA_MEASUREMENT_ID)});\n</script>` : ''}
 ${ADSENSE_CLIENT_ID ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${escapeHtml(ADSENSE_CLIENT_ID)}" crossorigin="anonymous"></script>` : ''}
+${structuredData ? `<script type="application/ld+json">${safeJsonLd(structuredData)}</script>` : ''}
 </head>
 <body class="${bodyClass || ''}">
 ${content}
@@ -75,7 +81,7 @@ function affiliateSlot() {
       <p class="affiliate-eyebrow">PR</p>
       <h2>もっと詳しく知りたい方へ</h2>
       <p>無料診断はあくまで簡易版です。生年月日や姓名の細かい部分まで踏み込んだ本格的な鑑定を受けたい方は、電話・チャット占いサービスもあります。</p>
-      <a class="quiz-btn quiz-btn-outline" href="#" rel="sponsored noopener" target="_blank">提携占いサービスを見る（準備中）</a>
+      <span class="quiz-btn quiz-btn-outline" aria-disabled="true">提携占いサービス準備中</span>
     </section>`;
 }
 
@@ -282,7 +288,7 @@ function formPageShell({ accent, emoji, title, subtitle, formHtml, ogUrl, descri
   });
 }
 
-function resultPageShell({ accent, eyebrow, emoji, title, bodyHtml, ogUrl, ogTitle, description, backHref, backLabel }) {
+function resultPageShell({ accent, eyebrow, emoji, title, bodyHtml, ogUrl, ogTitle, description, backHref, backLabel, structuredData }) {
   const content = `
   <header class="site-header quiz-header" style="--accent:${accent}">
     <div class="container">
@@ -319,6 +325,7 @@ function resultPageShell({ accent, eyebrow, emoji, title, bodyHtml, ogUrl, ogTit
     ogUrl,
     themeColor: accent,
     content,
+    structuredData,
   });
 }
 
@@ -410,51 +417,54 @@ const KETSUEKI_ACCENT = '#d64550';
 const BLOOD_TYPES = ['A', 'B', 'O', 'AB'];
 
 function renderKetsuekiForm() {
-  const typeOptions = (name) =>
+  const typeOptions = () =>
     BLOOD_TYPES.map((t) => `<option value="${t}">${t}型</option>`).join('');
 
+  const pairLinks = [];
+  BLOOD_TYPES.forEach((type, index) => {
+    BLOOD_TYPES.slice(index).forEach((partner) => {
+      pairLinks.push(`<a href="/ketsueki/r/${type}/${partner}" class="link-grid-item">${type}型×${partner}型</a>`);
+    });
+  });
+
   const formHtml = `
-    <p class="tool-desc">あなたの血液型から性格タイプを診断します。気になる相手の血液型も選ぶと、相性の目安も一緒にわかります。</p>
+    <p class="tool-desc">あなたと気になる相手の血液型を選ぶと、組み合わせごとの性格傾向・恋愛・すれ違いやすい点・付き合い方のヒントを読めます。</p>
     <form method="GET" action="/ketsueki/compute">
       <div class="form-row">
         <label for="type">あなたの血液型</label>
         <select name="type" id="type" required>
           <option value="">選択してください</option>
-          ${typeOptions('type')}
+          ${typeOptions()}
         </select>
       </div>
       <div class="form-row">
         <label for="partner">気になる相手の血液型（任意）</label>
         <select name="partner" id="partner">
           <option value="">選択しない</option>
-          ${typeOptions('partner')}
+          ${typeOptions()}
         </select>
       </div>
       <button type="submit" class="quiz-btn">診断する</button>
     </form>
     <div class="link-grid">
-      <p class="link-grid-title">血液型の組み合わせ相性から見る</p>
+      <p class="link-grid-title">血液型の組み合わせ相性10通り</p>
       <div class="link-grid-items">
-        ${(() => {
-          const links = [];
-          BLOOD_TYPES.forEach((t, i) => {
-            BLOOD_TYPES.forEach((p, j) => {
-              if (j >= i) links.push(`<a href="/ketsueki/r/${t}/${p}" class="link-grid-item">${t}型×${p}型</a>`);
-            });
-          });
-          return links.join('\n        ');
-        })()}
+        ${pairLinks.join('\n        ')}
       </div>
+    </div>
+    <div class="compat-box">
+      <h2>血液型相性占いの見方</h2>
+      <p class="result-desc">血液型占いは、日本で会話のきっかけとして親しまれてきたエンタメです。同じ血液型でも性格や関係性は一人ひとり異なります。結果で相手を決めつけず、二人の違いを話すヒントとしてお楽しみください。</p>
     </div>`;
 
   return formPageShell({
     accent: KETSUEKI_ACCENT,
     emoji: '🩸',
-    title: '血液型占い',
-    subtitle: 'A型・B型・O型・AB型、性格タイプと相性をチェック',
+    title: '血液型相性占い',
+    subtitle: 'A型・B型・O型・AB型、10通りの組み合わせをチェック',
     formHtml,
     ogUrl: `${SITE_URL}/ketsueki`,
-    description: '血液型（A型・B型・O型・AB型）ごとの性格タイプと、気になる相手との相性の目安がわかる診断です。',
+    description: 'A型・B型・O型・AB型の血液型相性占い。10通りの組み合わせごとに、恋愛傾向、すれ違いやすい点、うまく付き合うコツを紹介します。',
   });
 }
 
@@ -464,45 +474,106 @@ function renderKetsuekiResult(type, partnerType) {
   const shareUrl = hasPartner ? `${SITE_URL}/ketsueki/r/${type}/${partnerType}` : `${SITE_URL}/ketsueki/r/${type}`;
 
   let compatHtml = '';
+  let relatedHtml = '';
+  let compat = null;
+
   if (hasPartner) {
-    const p = BLOOD_CONTENT[partnerType];
-    const key = [type, partnerType].sort().join('-');
-    // BLOOD_COMPAT_TEXT のキーは A,B,O,AB の並び順で登録されているため正引き/逆引き両方を試す
-    const order = ['A', 'B', 'O', 'AB'];
-    const a = order.indexOf(type) <= order.indexOf(partnerType) ? type : partnerType;
-    const c = order.indexOf(type) <= order.indexOf(partnerType) ? partnerType : type;
-    const compatKey = `${a}-${c}`;
-    const compatText = BLOOD_COMPAT_TEXT[compatKey] || '';
+    const partner = BLOOD_CONTENT[partnerType];
+    const compatKey = `${type}-${partnerType}`;
+    compat = BLOOD_COMPAT_CONTENT[compatKey];
+
+    const relatedLinks = [];
+    BLOOD_TYPES.forEach((first, index) => {
+      BLOOD_TYPES.slice(index).forEach((second) => {
+        if (first === type && second === partnerType) return;
+        if (first === type || second === type || first === partnerType || second === partnerType) {
+          relatedLinks.push(`<a href="/ketsueki/r/${first}/${second}" class="link-grid-item">${first}型×${second}型</a>`);
+        }
+      });
+    });
+
     compatHtml = `
       <div class="compat-box">
-        <p class="result-eyebrow">${escapeHtml(type)}型 × ${escapeHtml(partnerType)}型 の相性</p>
-        <p class="result-desc">${escapeHtml(compatText)}</p>
+        <h2>${escapeHtml(type)}型と${escapeHtml(partnerType)}型｜相性の特徴</h2>
+        <p class="result-desc">${escapeHtml(compat.summary)}</p>
+        <h2>恋愛では</h2>
+        <p class="result-desc">${escapeHtml(compat.love)}</p>
+        <h2>すれ違いやすい点</h2>
+        <p class="result-desc">${escapeHtml(compat.friction)}</p>
+        <h2>うまく付き合うコツ</h2>
+        <p class="result-desc">${escapeHtml(compat.tip)}</p>
+      </div>
+      <div class="compat-box">
+        <h2>それぞれの性格傾向</h2>
+        <h3>${escapeHtml(type)}型の傾向</h3>
+        <p class="result-desc">${escapeHtml(b.desc)}</p>
+        <h3>${escapeHtml(partnerType)}型の傾向</h3>
+        <p class="result-desc">${escapeHtml(partner.desc)}</p>
+      </div>`;
+
+    relatedHtml = `
+      <div class="link-grid">
+        <p class="link-grid-title">関連する血液型相性を見る</p>
+        <div class="link-grid-items">${relatedLinks.slice(0, 6).join('\n')}</div>
       </div>`;
   }
 
+  const pairShareText = hasPartner
+    ? `${type}型と${partnerType}型の相性をチェックしました｜しんだんラボ`
+    : b.shareText;
+
   const bodyHtml = `
-    <p class="result-desc">${escapeHtml(b.desc)}</p>
-    ${compatHtml}
+    ${hasPartner ? compatHtml : `<p class="result-desc">${escapeHtml(b.desc)}</p>`}
     <p class="disclaimer" style="text-align:left;margin:0 0 18px;">血液型と性格の関連性は科学的には証明されていません。日本で広く親しまれてきたエンタメとしてお楽しみください。</p>
+    ${relatedHtml}
     <div class="result-actions" style="margin-bottom:14px;">
-      <button id="copy-link-btn" class="quiz-btn" data-url="${escapeHtml(shareUrl)}" data-text="${escapeHtml(b.shareText)}">
+      <button id="copy-link-btn" class="quiz-btn" data-url="${escapeHtml(shareUrl)}" data-text="${escapeHtml(pairShareText)}">
         リンクをコピーしてシェア
       </button>
     </div>`;
 
+  const pageTitle = hasPartner
+    ? `${type}型と${partnerType}型の相性｜恋愛・性格・うまく付き合うコツ`
+    : `${b.title}の性格傾向｜血液型占い`;
+  const pageDescription = hasPartner
+    ? `${type}型と${partnerType}型の相性を血液型占いで紹介。恋愛傾向、すれ違いやすい点、うまく付き合うコツまで解説します。${compat.summary}`
+    : b.shareText;
+
+  const structuredData = hasPartner
+    ? [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'WebPage',
+          name: pageTitle,
+          description: pageDescription,
+          url: shareUrl,
+          inLanguage: 'ja',
+          isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'ホーム', item: `${SITE_URL}/` },
+            { '@type': 'ListItem', position: 2, name: '血液型相性占い', item: `${SITE_URL}/ketsueki` },
+            { '@type': 'ListItem', position: 3, name: `${type}型と${partnerType}型の相性`, item: shareUrl },
+          ],
+        },
+      ]
+    : null;
+
   return resultPageShell({
     accent: KETSUEKI_ACCENT,
-    eyebrow: '血液型占い 結果',
+    eyebrow: hasPartner ? '血液型相性占い' : '血液型占い 結果',
     emoji: b.emoji,
-    title: hasPartner ? `${b.title} × ${partnerType}型` : b.title,
+    title: hasPartner ? `${type}型と${partnerType}型の相性` : b.title,
     bodyHtml: bodyHtml + `<script src="/js/result-share.js"></script>`,
     ogUrl: shareUrl,
-    ogTitle: hasPartner
-      ? `${type}型×${partnerType}型の相性は？ - しんだんラボ`
-      : `私は${b.title} ${b.emoji} - しんだんラボ`,
-    description: b.shareText,
+    ogTitle: `${pageTitle} - しんだんラボ`,
+    description: pageDescription,
     backHref: '/ketsueki',
-    backLabel: 'もう一度診断する',
+    backLabel: '別の組み合わせを見る',
+    structuredData,
   });
 }
 

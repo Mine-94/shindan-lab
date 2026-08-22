@@ -20,6 +20,7 @@ const {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const ADSENSE_PUBLISHER_ID = (process.env.ADSENSE_CLIENT_ID || 'ca-pub-8602848692420724').replace(/^ca-/, '');
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -30,6 +31,14 @@ const limiter = rateLimit({
 app.use(limiter);
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+// AdSenseの販売者情報をルート直下のtext/plainで返します。
+// catch-allリダイレクトより先に定義しないと、Googleが確認できません。
+app.get('/ads.txt', (req, res) => {
+  res.type('text/plain');
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.send(`google.com, ${ADSENSE_PUBLISHER_ID}, DIRECT, f08c47fec0942fa0\n`);
+});
 
 function findQuiz(id) {
   return quizzes.find((q) => q.id === id);
@@ -113,10 +122,17 @@ app.get('/shichuu/compute', (req, res) => {
   const month = parseInt(req.query.month, 10);
   const day = parseInt(req.query.day, 10);
 
+  const date = new Date(year, month - 1, day);
+  const isRealDate =
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day;
+
   if (
     !Number.isInteger(year) || year < 1900 || year > 2026 ||
     !Number.isInteger(month) || month < 1 || month > 12 ||
-    !Number.isInteger(day) || day < 1 || day > 31
+    !Number.isInteger(day) || day < 1 || day > 31 ||
+    !isRealDate
   ) {
     return res.redirect('/shichuu');
   }

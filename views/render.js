@@ -12,6 +12,7 @@ const { MEIMEI_FEATURED } = require('../data/seo-longtail');
 const SITE_NAME = 'しんだんラボ';
 const SITE_URL = process.env.SITE_URL || 'https://example.onrender.com'; // デプロイ後、実際のドメインに置き換えてください
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION || '';
+const ADSENSE_CLIENT_ID = process.env.ADSENSE_CLIENT_ID || ''; // 例: ca-pub-8602848692420724
 
 function escapeHtml(str) {
   return String(str)
@@ -45,6 +46,7 @@ ${themeColor ? `<meta name="theme-color" content="${themeColor}" />` : ''}
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/css/style.css" />
+${ADSENSE_CLIENT_ID ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${escapeHtml(ADSENSE_CLIENT_ID)}" crossorigin="anonymous"></script>` : ''}
 </head>
 <body class="${bodyClass || ''}">
 ${content}

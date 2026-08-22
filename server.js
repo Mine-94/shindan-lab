@@ -60,12 +60,13 @@ app.get('/sitemap.xml', (req, res) => {
   // 十干タイプ診断: /shichuu/r/:stemKey (10件) — 既存ルートだが従来sitemapから漏れていた
   const shichuuPaths = STEM_KEYS.map((k) => `/shichuu/r/${k}`);
 
-  // 血液型占い: /ketsueki/r/:type (4件) + /ketsueki/r/:type/:partner (16件、A-A等の同型含む全組合せ)
+  // 血液型占い: 単独4件 + 重複を除いた組み合わせ10件
+  // A-B と B-A のような逆順URLは同じ検索意図のため、canonical順のURLだけをsitemapに載せます。
   const ketsuekiSinglePaths = BLOOD_TYPES.map((t) => `/ketsueki/r/${t}`);
   const ketsuekiPairPaths = [];
-  BLOOD_TYPES.forEach((t) => {
-    BLOOD_TYPES.forEach((p) => {
-      ketsuekiPairPaths.push(`/ketsueki/r/${t}/${p}`);
+  BLOOD_TYPES.forEach((t, index) => {
+    BLOOD_TYPES.slice(index).forEach((partner) => {
+      ketsuekiPairPaths.push(`/ketsueki/r/${t}/${partner}`);
     });
   });
 
@@ -134,6 +135,12 @@ app.get('/ketsueki', (req, res) => {
   res.send(renderKetsuekiForm());
 });
 
+function canonicalBloodPair(type, partner) {
+  const typeIndex = BLOOD_TYPES.indexOf(type);
+  const partnerIndex = BLOOD_TYPES.indexOf(partner);
+  return typeIndex <= partnerIndex ? [type, partner] : [partner, type];
+}
+
 app.get('/ketsueki/compute', (req, res) => {
   const type = String(req.query.type || '').toUpperCase();
   const partner = String(req.query.partner || '').toUpperCase();
@@ -141,7 +148,8 @@ app.get('/ketsueki/compute', (req, res) => {
   if (!BLOOD_TYPES.includes(type)) return res.redirect('/ketsueki');
 
   if (partner && BLOOD_TYPES.includes(partner)) {
-    return res.redirect(`/ketsueki/r/${type}/${partner}`);
+    const [first, second] = canonicalBloodPair(type, partner);
+    return res.redirect(`/ketsueki/r/${first}/${second}`);
   }
   res.redirect(`/ketsueki/r/${type}`);
 });
@@ -156,7 +164,13 @@ app.get('/ketsueki/r/:type/:partner', (req, res) => {
   const type = req.params.type.toUpperCase();
   const partner = req.params.partner.toUpperCase();
   if (!BLOOD_TYPES.includes(type) || !BLOOD_TYPES.includes(partner)) return res.redirect('/ketsueki');
-  res.send(renderKetsuekiResult(type, partner));
+
+  const [first, second] = canonicalBloodPair(type, partner);
+  if (type !== first || partner !== second) {
+    return res.redirect(301, `/ketsueki/r/${first}/${second}`);
+  }
+
+  res.send(renderKetsuekiResult(first, second));
 });
 
 // --- 姓名判断 ---

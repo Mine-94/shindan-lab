@@ -13,6 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentIndex = 0;
   const scores = {};
 
+  function trackEvent(name, params = {}) {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', name, params);
+    }
+  }
+
   function renderQuestion() {
     const question = quiz.questions[currentIndex];
     questionCountEl.textContent = `${currentIndex + 1} / ${quiz.questions.length}`;
@@ -50,13 +56,32 @@ document.addEventListener('DOMContentLoaded', () => {
         bestType = type;
       }
     });
-    window.location.href = `/q/${quiz.id}/r/${bestType}`;
+    const destination = `/q/${quiz.id}/r/${bestType}`;
+    let redirected = false;
+    const redirect = () => {
+      if (redirected) return;
+      redirected = true;
+      window.location.href = destination;
+    };
+
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'quiz_complete', {
+        quiz_id: quiz.id,
+        result_type: bestType,
+        event_callback: redirect,
+        event_timeout: 800,
+      });
+      window.setTimeout(redirect, 900);
+    } else {
+      redirect();
+    }
   }
 
   startBtn.addEventListener('click', () => {
     introEl.hidden = true;
     playEl.hidden = false;
     currentIndex = 0;
+    trackEvent('quiz_start', { quiz_id: quiz.id });
     renderQuestion();
   });
 });

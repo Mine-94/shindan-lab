@@ -14,6 +14,11 @@ const SITE_NAME = 'しんだんラボ';
 const SITE_URL = process.env.SITE_URL || 'https://example.onrender.com'; // デプロイ後、実際のドメインに置き換えてください
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION || '';
 const ADSENSE_CLIENT_ID = process.env.ADSENSE_CLIENT_ID || ''; // 例: ca-pub-8602848692420724
+const AFFILIATE_URL = /^https?:\/\//.test(process.env.AFFILIATE_URL || '')
+  ? process.env.AFFILIATE_URL
+  : '';
+const AFFILIATE_TITLE = process.env.AFFILIATE_TITLE || 'もっと詳しく知りたい方へ';
+const AFFILIATE_DESCRIPTION = process.env.AFFILIATE_DESCRIPTION || '診断結果をもとに、専門サービスでさらに詳しく相談できます。';
 const GA_MEASUREMENT_ID = /^G-[A-Z0-9]+$/.test(process.env.GA_MEASUREMENT_ID || '')
   ? process.env.GA_MEASUREMENT_ID
   : '';
@@ -70,18 +75,43 @@ ${content}
     </nav>
   </div>
 </footer>
+${GA_MEASUREMENT_ID ? `<script>
+(function () {
+  function track(name, params) {
+    if (typeof window.gtag === 'function') window.gtag('event', name, params || {});
+  }
+
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (!form || form.tagName !== 'FORM') return;
+    track('tool_submit', {
+      tool_path: form.getAttribute('action') || window.location.pathname,
+    });
+  });
+
+  document.addEventListener('click', function (event) {
+    var link = event.target.closest && event.target.closest('a[href]');
+    if (!link || link.origin === window.location.origin) return;
+    track(link.dataset.affiliate === 'true' ? 'affiliate_outbound_click' : 'outbound_click', {
+      link_url: link.href,
+      page_path: window.location.pathname,
+    });
+  });
+})();
+</script>` : ''}
 </body>
 </html>`;
 }
 
-// 本格的な鑑定への導線（アフィリエイト枠）。実際のリンクは提携後に置き換えてください。
+// 承認済みの広告URLが設定された場合だけ表示します。
 function affiliateSlot() {
+  if (!AFFILIATE_URL) return '';
   return `
     <section class="affiliate-card">
       <p class="affiliate-eyebrow">PR</p>
-      <h2>もっと詳しく知りたい方へ</h2>
-      <p>無料診断はあくまで簡易版です。生年月日や姓名の細かい部分まで踏み込んだ本格的な鑑定を受けたい方は、電話・チャット占いサービスもあります。</p>
-      <span class="quiz-btn quiz-btn-outline" aria-disabled="true">提携占いサービス準備中</span>
+      <h2>${escapeHtml(AFFILIATE_TITLE)}</h2>
+      <p>${escapeHtml(AFFILIATE_DESCRIPTION)}</p>
+      <a class="quiz-btn quiz-btn-outline" href="${escapeHtml(AFFILIATE_URL)}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="true">サービスを見る</a>
     </section>`;
 }
 

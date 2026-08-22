@@ -38,6 +38,18 @@ check_contains() {
   fi
 }
 
+check_not_contains() {
+  local desc="$1" url="$2" needle="$3"
+  curl -s "$url" -o /tmp/shindan_resp.html
+  if grep -q "$needle" /tmp/shindan_resp.html; then
+    echo "FAIL  unexpectedly contains '$needle': $desc ($url)"
+    fail=$((fail+1))
+  else
+    echo "PASS  does not contain '$needle': $desc"
+    pass=$((pass+1))
+  fi
+}
+
 check_redirect_location() {
   local desc="$1" url="$2" needle="$3"
   loc=$(curl -s -o /dev/null -D - "$url" | grep -i '^location:' | tr -d '\r')
@@ -54,6 +66,8 @@ echo ""
 echo "=== 基本ページ ==="
 check_status "ホーム" "$BASE/" 200
 check_status "robots.txt" "$BASE/robots.txt" 200
+check_status "ads.txt" "$BASE/ads.txt" 200
+check_contains "ads.txt 販売者情報" "$BASE/ads.txt" "google.com, pub-8602848692420724, DIRECT, f08c47fec0942fa0"
 check_contains "robots.txt sitemapリンク" "$BASE/robots.txt" "Sitemap:"
 check_status "sitemap.xml" "$BASE/sitemap.xml" 200
 check_contains "sitemapに/shichuu含む" "$BASE/sitemap.xml" "/shichuu</loc>"
@@ -69,13 +83,14 @@ check_contains "sitemapに/ketsueki/r/A/AB含む(ペア)" "$BASE/sitemap.xml" "/
 check_contains "sitemapに/meimei/r/長尾テール含む(佐藤+湊)" "$BASE/sitemap.xml" "/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A"
 check_contains "sitemapに有名人ロングテール含む(大谷翔平)" "$BASE/sitemap.xml" "%E5%A4%A7%E8%B0%B7"
 
+curl -s "$BASE/sitemap.xml" -o /tmp/shindan_resp.html
 url_count=$(grep -o '<url>' /tmp/shindan_resp.html | wc -l)
-echo "sitemap内のURL数: $url_count (期待値: 静的9+十干10+血液型単4+血液型ペア16+姓名判断52=91)"
-if [ "$url_count" == "91" ]; then
+echo "sitemap内のURL数: $url_count (期待値: 静的9+十干10+血液型単4+血液型ペア10+姓名判断52=85)"
+if [ "$url_count" == "85" ]; then
   echo "PASS  sitemap URL数が期待通り"
   pass=$((pass+1))
 else
-  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 89)"
+  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 85)"
   fail=$((fail+1))
 fi
 
@@ -86,6 +101,8 @@ check_contains "フォームに内部リンクグリッド" "$BASE/shichuu" "lin
 check_redirect_location "compute→結果リダイレクト" "$BASE/shichuu/compute?year=1990&month=5&day=20" "/shichuu/r/"
 check_status "結果ページ(甲)" "$BASE/shichuu/r/kinoe" 200
 check_status "結果ページ(不正キー→リダイレクト)" "$BASE/shichuu/r/notakey" 302
+check_redirect_location "存在しない日付→フォーム" "$BASE/shichuu/compute?year=2026&month=2&day=30" "/shichuu"
+check_not_contains "承認URL未設定時はPRカードを隠す" "$BASE/shichuu/r/kinoe" "affiliate-card"
 
 echo ""
 echo "=== 血液型占い ==="

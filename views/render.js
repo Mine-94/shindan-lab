@@ -156,9 +156,6 @@ function renderHome(quizzes, fortuneTools) {
     </div>
   </header>
 
-  <div class="ad-slot ad-slot-top container">
-    <div class="ad-placeholder">広告枠（上部）</div>
-  </div>
 
   <main class="container">
     <section class="content-section">
@@ -175,10 +172,7 @@ function renderHome(quizzes, fortuneTools) {
       </div>
     </section>
 
-    <div class="ad-slot ad-slot-bottom">
-      <div class="ad-placeholder">広告枠（下部）</div>
-    </div>
-  </main>`;
+    main>`;
 
   return baseLayout({
     title: 'しんだんラボ - 姓名判断・血液型占い・四柱推命・性格診断まとめ',
@@ -218,10 +212,7 @@ function renderQuizPage(quiz) {
       </div>
     </section>
 
-    <div class="ad-slot ad-slot-bottom">
-      <div class="ad-placeholder">広告枠（下部）</div>
-    </div>
-  </main>
+    main>
 
   <script>window.__QUIZ__ = ${JSON.stringify(quiz)};</script>
   <script src="/js/quiz-app.js"></script>
@@ -262,9 +253,6 @@ function renderResultPage(quiz, resultKey) {
       </div>
     </section>
 
-    <div class="ad-slot ad-slot-bottom">
-      <div class="ad-placeholder">広告枠（下部）</div>
-    </div>
 
     <section class="info-card">
       <h2>他の診断もやってみる</h2>
@@ -304,9 +292,6 @@ function formPageShell({ accent, emoji, title, subtitle, formHtml, ogUrl, descri
       ${formHtml}
     </section>
 
-    <div class="ad-slot ad-slot-bottom">
-      <div class="ad-placeholder">広告枠（下部）</div>
-    </div>
   </main>`;
 
   return baseLayout({
@@ -337,9 +322,6 @@ function resultPageShell({ accent, eyebrow, emoji, title, bodyHtml, ogUrl, ogTit
       </div>
     </section>
 
-    <div class="ad-slot ad-slot-bottom">
-      <div class="ad-placeholder">広告枠（下部）</div>
-    </div>
 
     ${affiliateSlot()}
 

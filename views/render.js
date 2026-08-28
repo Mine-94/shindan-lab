@@ -41,6 +41,10 @@ function baseLayout({ title, description, ogUrl, bodyClass, content, themeColor,
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<link rel="manifest" href="/manifest.json" />
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="canonical" href="${escapeHtml(ogUrl)}" />
@@ -99,6 +103,13 @@ ${GA_MEASUREMENT_ID ? `<script>
   });
 })();
 </script>` : ''}
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/service-worker.js').catch(function () {});
+  });
+}
+</script>
 </body>
 </html>`;
 }

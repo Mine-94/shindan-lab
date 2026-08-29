@@ -186,7 +186,7 @@ function renderHome(quizzes, fortuneTools) {
     main>`;
 
   return baseLayout({
-    title: 'しんだんラボ - 姓名判断・血液型占い・四柱推命・性格診断まとめ',
+    title: '無料占い・姓名判断・血液型占い・四柱推命診断まとめ - しんだんラボ',
     description: '姓名判断、血液型占い、四柱推命の十干タイプ診断から、推し活タイプ・隠れた性格診断まで。無料・会員登録なしで今すぐ診断できる総合診断サイトです。',
     ogUrl: SITE_URL + '/',
     content,
@@ -397,11 +397,11 @@ function renderShichuuForm() {
   return formPageShell({
     accent: SHICHUU_ACCENT,
     emoji: '☯️',
-    title: '十干タイプ診断（簡易四柱推命）',
+    title: '四柱推命 無料診断（十干タイプ・簡易命式）',
     subtitle: '生まれ年から、あなたの五行タイプを診断',
     formHtml,
     ogUrl: `${SITE_URL}/shichuu`,
-    description: '生年月日から十干（甲・乙・丙・丁・戊・己・庚・辛・壬・癸）のタイプを診断する簡易四柱推命ツールです。',
+    description: '無料の四柱推命診断。生年月日から十干（甲・乙・丙・丁・戊・己・庚・辛・壬・癸）のタイプと命式を診断する簡易四柱推命ツールです。',
   });
 }
 
@@ -483,11 +483,11 @@ function renderKetsuekiForm() {
   return formPageShell({
     accent: KETSUEKI_ACCENT,
     emoji: '🩸',
-    title: '血液型相性占い',
+    title: '血液型相性占い 無料｜性格・恋愛の相性診断',
     subtitle: 'A型・B型・O型・AB型、10通りの組み合わせをチェック',
     formHtml,
     ogUrl: `${SITE_URL}/ketsueki`,
-    description: 'A型・B型・O型・AB型の血液型相性占い。10通りの組み合わせごとに、恋愛傾向、すれ違いやすい点、うまく付き合うコツを紹介します。',
+    description: '無料の血液型相性占い。A型・B型・O型・AB型の10通りの組み合わせごとに、恋愛傾向、すれ違いやすい点、うまく付き合うコツを紹介します。',
   });
 }
 
@@ -638,11 +638,11 @@ function renderMeimeiForm(errorMessage) {
   return formPageShell({
     accent: MEIMEI_ACCENT,
     emoji: '🖋️',
-    title: '姓名判断',
+    title: '姓名判断 無料診断｜画数でわかる五格・吉凶',
     subtitle: '漢字の画数から五格・吉凶をチェック',
     formHtml,
     ogUrl: `${SITE_URL}/meimei`,
-    description: '姓名の漢字の画数から天格・人格・地格・外格・総格の五格を算出し、吉凶を診断する姓名判断ツールです。',
+    description: '無料の姓名判断。姓名の漢字の画数から天格・人格・地格・外格・総格の五格を算出し、吉凶を診断するツールです。',
   });
 }
 

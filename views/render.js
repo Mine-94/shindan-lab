@@ -238,9 +238,16 @@ function renderQuizPage(quiz) {
   });
 }
 
-function renderResultPage(quiz, resultKey) {
+function renderResultPage(quiz, resultKey, matchScore) {
   const result = quiz.results[resultKey];
   const shareUrl = `${SITE_URL}/q/${quiz.id}/r/${resultKey}`;
+  const scoreHtml = Number.isInteger(matchScore)
+    ? `
+      <div class="compat-box" style="text-align:center;">
+        <p class="result-eyebrow">私の「${escapeHtml(result.title)}」一致率</p>
+        <p style="font-size:2.2rem;font-weight:800;color:${quiz.themeColor};margin:4px 0;">${matchScore}%</p>
+      </div>`
+    : '';
 
   const content = `
   <header class="site-header quiz-header" style="--accent:${quiz.themeColor}">
@@ -255,6 +262,7 @@ function renderResultPage(quiz, resultKey) {
       <div class="result-badge">${result.emoji}</div>
       <h1>${escapeHtml(result.title)}</h1>
       <p class="result-desc">${escapeHtml(result.desc)}</p>
+      ${scoreHtml}
 
       <div class="result-actions">
         <button id="copy-link-btn" class="quiz-btn" data-url="${escapeHtml(shareUrl)}" data-text="${escapeHtml(result.shareText)}">

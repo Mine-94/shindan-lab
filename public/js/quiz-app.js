@@ -56,7 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         bestType = type;
       }
     });
-    const destination = `/q/${quiz.id}/r/${bestType}`;
+    const matchPct = Math.round((bestScore / quiz.questions.length) * 100);
+    const destination = `/q/${quiz.id}/r/${bestType}?s=${matchPct}`;
     let redirected = false;
     const redirect = () => {
       if (redirected) return;

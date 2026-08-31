@@ -109,7 +109,11 @@ app.get('/q/:id', (req, res) => {
 app.get('/q/:id/r/:resultKey', (req, res) => {
   const quiz = findQuiz(req.params.id);
   if (!quiz || !quiz.results[req.params.resultKey]) return res.redirect('/');
-  res.send(renderResultPage(quiz, req.params.resultKey));
+  // タイプ+スコア結合型: クライアントで計算した「一致率」(?s=0~100)があれば結果と一緒に表示。
+  // 値がない・範囲外の場合は静かに無視し、従来通りにレンダリング(canonical URLはそのまま維持)。
+  const scoreRaw = parseInt(req.query.s, 10);
+  const matchScore = Number.isInteger(scoreRaw) && scoreRaw >= 0 && scoreRaw <= 100 ? scoreRaw : null;
+  res.send(renderResultPage(quiz, req.params.resultKey, matchScore));
 });
 
 // --- 簡易四柱推命（十干タイプ診断） ---

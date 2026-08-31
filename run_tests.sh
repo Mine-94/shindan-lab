@@ -114,12 +114,12 @@ check_contains "sitemapに有名人ロングテール含む(大谷翔平)" "$BAS
 
 curl -s "$BASE/sitemap.xml" -o /tmp/shindan_resp.html
 url_count=$(grep -o '<url>' /tmp/shindan_resp.html | wc -l)
-echo "sitemap内のURL数: $url_count (期待値: 静的9+十干10+血液型単4+血液型ペア10+姓名判断52=85)"
-if [ "$url_count" == "85" ]; then
+echo "sitemap内のURL数: $url_count (期待値: 静的10+十干10+血液型単4+血液型ペア10+姓名判断52=86)"
+if [ "$url_count" == "86" ]; then
   echo "PASS  sitemap URL数が期待通り"
   pass=$((pass+1))
 else
-  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 85)"
+  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 86)"
   fail=$((fail+1))
 fi
 
@@ -148,6 +148,33 @@ check_status "結果(佐藤+湊)" "$BASE/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A" 
 check_contains "佐藤+湊が診断成功(エラーでない)" "$BASE/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A" "seimei-table"
 check_status "有名人(大谷翔平)診断成功" "$BASE/meimei/r/%E5%A4%A7%E8%B0%B7/%E7%BF%94%E5%B9%B3" 200
 check_contains "大谷翔平が診断成功(エラーでない)" "$BASE/meimei/r/%E5%A4%A7%E8%B0%B7/%E7%BF%94%E5%B9%B3" "seimei-table"
+
+echo ""
+echo "=== トレンド診断(推し活/性格/バランスゲーム) ==="
+check_status "推し活タイプ診断 イントロ" "$BASE/q/oshikatsu-type" 200
+check_status "推し活タイプ診断 結果" "$BASE/q/oshikatsu-type/r/kamiseki" 200
+check_status "本当の性格タイプ診断 イントロ" "$BASE/q/honto-no-seikaku" 200
+check_status "人生の選択バランスゲーム イントロ" "$BASE/q/jinsei-balance-game" 200
+check_redirect_location "存在しない診断ID→ホーム" "$BASE/q/not-a-real-quiz" "/"
+check_redirect_location "存在しない結果キー→ホーム" "$BASE/q/oshikatsu-type/r/not-a-real-key" "/"
+
+echo ""
+echo "=== 新規: かくれキャラ診断 ==="
+check_status "かくれキャラ診断 イントロ" "$BASE/q/kakure-chara" 200
+check_contains "ホームにかくれキャラ診断カードが表示" "$BASE/" "かくれキャラ診断"
+check_status "結果(kakure-boss)" "$BASE/q/kakure-chara/r/kakure-boss" 200
+check_status "結果(mystery-cat)" "$BASE/q/kakure-chara/r/mystery-cat" 200
+check_status "結果(sharp-fox)" "$BASE/q/kakure-chara/r/sharp-fox" 200
+check_status "結果(sunshine)" "$BASE/q/kakure-chara/r/sunshine" 200
+check_contains "sitemapに/q/kakure-chara含む" "$BASE/sitemap.xml" "/q/kakure-chara</loc>"
+
+echo ""
+echo "=== タイプ+一致率結合型(?s=0~100) ==="
+check_contains "?s=88付きは一致率88%を表示" "$BASE/q/oshikatsu-type/r/kamiseki?s=88" "88%"
+check_contains "?s=88付きは一致率ラベルを表示" "$BASE/q/oshikatsu-type/r/kamiseki?s=88" "一致率"
+check_not_contains "パラメータなしのcanonical URLは一致率非表示" "$BASE/q/oshikatsu-type/r/kamiseki" "一致率"
+check_not_contains "範囲外(?s=150)は無視される" "$BASE/q/oshikatsu-type/r/kamiseki?s=150" "一致率"
+check_not_contains "数値でない(?s=abc)は無視される" "$BASE/q/oshikatsu-type/r/kamiseki?s=abc" "一致率"
 
 echo ""
 echo "=== 構造化データ(JSON-LD)拡張 — 十干・血液型単独・姓名判断にも付与 ==="

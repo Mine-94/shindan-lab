@@ -408,6 +408,7 @@ function renderShichuuForm() {
 function renderShichuuResult(stemKey) {
   const s = STEM_CONTENT[stemKey];
   const shareUrl = `${SITE_URL}/shichuu/r/${stemKey}`;
+  const pageTitle = `私の十干タイプは「${s.title}」 ${s.emoji} - しんだんラボ`;
 
   const bodyHtml = `
     <p class="result-desc" style="text-align:center;color:var(--text-muted);margin-bottom:4px;">${escapeHtml(s.subtitle)}</p>
@@ -418,6 +419,27 @@ function renderShichuuResult(stemKey) {
       </button>
     </div>`;
 
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: pageTitle,
+      description: s.shareText,
+      url: shareUrl,
+      inLanguage: 'ja',
+      isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'ホーム', item: `${SITE_URL}/` },
+        { '@type': 'ListItem', position: 2, name: '十干タイプ診断', item: `${SITE_URL}/shichuu` },
+        { '@type': 'ListItem', position: 3, name: s.title, item: shareUrl },
+      ],
+    },
+  ];
+
   return resultPageShell({
     accent: SHICHUU_ACCENT,
     eyebrow: '十干タイプ診断 結果',
@@ -425,10 +447,11 @@ function renderShichuuResult(stemKey) {
     title: s.title,
     bodyHtml: bodyHtml + `<script src="/js/result-share.js"></script>`,
     ogUrl: shareUrl,
-    ogTitle: `私の十干タイプは「${s.title}」 ${s.emoji} - しんだんラボ`,
+    ogTitle: pageTitle,
     description: s.shareText,
     backHref: '/shichuu',
     backLabel: 'もう一度診断する',
+    structuredData,
   });
 }
 
@@ -562,28 +585,31 @@ function renderKetsuekiResult(type, partnerType) {
     ? `${type}型と${partnerType}型の相性を血液型占いで紹介。恋愛傾向、すれ違いやすい点、うまく付き合うコツまで解説します。${compat.summary}`
     : b.shareText;
 
-  const structuredData = hasPartner
-    ? [
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: pageTitle,
+      description: pageDescription,
+      url: shareUrl,
+      inLanguage: 'ja',
+      isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'ホーム', item: `${SITE_URL}/` },
+        { '@type': 'ListItem', position: 2, name: '血液型相性占い', item: `${SITE_URL}/ketsueki` },
         {
-          '@context': 'https://schema.org',
-          '@type': 'WebPage',
-          name: pageTitle,
-          description: pageDescription,
-          url: shareUrl,
-          inLanguage: 'ja',
-          isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+          '@type': 'ListItem',
+          position: 3,
+          name: hasPartner ? `${type}型と${partnerType}型の相性` : `${type}型の性格傾向`,
+          item: shareUrl,
         },
-        {
-          '@context': 'https://schema.org',
-          '@type': 'BreadcrumbList',
-          itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'ホーム', item: `${SITE_URL}/` },
-            { '@type': 'ListItem', position: 2, name: '血液型相性占い', item: `${SITE_URL}/ketsueki` },
-            { '@type': 'ListItem', position: 3, name: `${type}型と${partnerType}型の相性`, item: shareUrl },
-          ],
-        },
-      ]
-    : null;
+      ],
+    },
+  ];
 
   return resultPageShell({
     accent: KETSUEKI_ACCENT,
@@ -681,6 +707,28 @@ function renderMeimeiResult(sei, mei, calcResult) {
     .join('\n');
 
   const shareText = `姓名判断「${fullName}」の結果は五格中${calcResult.kichiCount}つが吉数でした`;
+  const pageTitle = `「${fullName}」の姓名判断結果 - しんだんラボ`;
+
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: pageTitle,
+      description: shareText,
+      url: shareUrl,
+      inLanguage: 'ja',
+      isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'ホーム', item: `${SITE_URL}/` },
+        { '@type': 'ListItem', position: 2, name: '姓名判断', item: `${SITE_URL}/meimei` },
+        { '@type': 'ListItem', position: 3, name: fullName, item: shareUrl },
+      ],
+    },
+  ];
 
   const bodyHtml = `
     <p class="result-desc" style="text-align:center;">「${escapeHtml(fullName)}」さんの診断結果</p>
@@ -706,10 +754,11 @@ function renderMeimeiResult(sei, mei, calcResult) {
     title: `${fullName}`,
     bodyHtml: bodyHtml + `<script src="/js/result-share.js"></script>`,
     ogUrl: shareUrl,
-    ogTitle: `「${fullName}」の姓名判断結果 - しんだんラボ`,
+    ogTitle: pageTitle,
     description: shareText,
     backHref: '/meimei',
     backLabel: '別の名前で診断する',
+    structuredData,
   });
 }
 

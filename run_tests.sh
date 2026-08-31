@@ -62,6 +62,35 @@ check_redirect_location() {
   fi
 }
 
+check_valid_jsonld() {
+  local desc="$1" url="$2"
+  curl -s "$url" -o /tmp/shindan_resp.html
+  node -e '
+    const fs = require("fs");
+    const html = fs.readFileSync("/tmp/shindan_resp.html", "utf8");
+    const m = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    if (!m) { console.error("NO_MATCH"); process.exit(1); }
+    try {
+      const data = JSON.parse(m[1]);
+      if (!Array.isArray(data) || data.length < 2) { console.error("UNEXPECTED_SHAPE"); process.exit(1); }
+      const hasWebPage = data.some((d) => d["@type"] === "WebPage");
+      const hasBreadcrumb = data.some((d) => d["@type"] === "BreadcrumbList");
+      if (!hasWebPage || !hasBreadcrumb) { console.error("MISSING_TYPE"); process.exit(1); }
+      process.exit(0);
+    } catch (e) {
+      console.error("PARSE_ERROR: " + e.message);
+      process.exit(1);
+    }
+  ' 2>/tmp/shindan_jsonld_err.txt
+  if [ $? -eq 0 ]; then
+    echo "PASS  valid JSON-LD (WebPage+BreadcrumbList): $desc"
+    pass=$((pass+1))
+  else
+    echo "FAIL  invalid JSON-LD ($(cat /tmp/shindan_jsonld_err.txt)): $desc ($url)"
+    fail=$((fail+1))
+  fi
+}
+
 echo ""
 echo "=== 基本ページ ==="
 check_status "ホーム" "$BASE/" 200
@@ -119,6 +148,17 @@ check_status "結果(佐藤+湊)" "$BASE/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A" 
 check_contains "佐藤+湊が診断成功(エラーでない)" "$BASE/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A" "seimei-table"
 check_status "有名人(大谷翔平)診断成功" "$BASE/meimei/r/%E5%A4%A7%E8%B0%B7/%E7%BF%94%E5%B9%B3" 200
 check_contains "大谷翔平が診断成功(エラーでない)" "$BASE/meimei/r/%E5%A4%A7%E8%B0%B7/%E7%BF%94%E5%B9%B3" "seimei-table"
+
+echo ""
+echo "=== 構造化データ(JSON-LD)拡張 — 十干・血液型単独・姓名判断にも付与 ==="
+check_contains "十干結果(甲)にJSON-LD" "$BASE/shichuu/r/kinoe" "application/ld+json"
+check_valid_jsonld "十干結果(甲)のJSON-LD妥当性" "$BASE/shichuu/r/kinoe"
+check_contains "血液型単独結果(A)にJSON-LD" "$BASE/ketsueki/r/A" "application/ld+json"
+check_valid_jsonld "血液型単独結果(A)のJSON-LD妥当性" "$BASE/ketsueki/r/A"
+check_contains "血液型相性結果(A/B)にJSON-LD" "$BASE/ketsueki/r/A/B" "application/ld+json"
+check_valid_jsonld "血液型相性結果(A/B)のJSON-LD妥当性" "$BASE/ketsueki/r/A/B"
+check_contains "姓名判断結果(佐藤+湊)にJSON-LD" "$BASE/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A" "application/ld+json"
+check_valid_jsonld "姓名判断結果(佐藤+湊)のJSON-LD妥当性" "$BASE/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A"
 
 echo ""
 echo "=== GSC verification meta tag (env var未設定時は出ない) ==="

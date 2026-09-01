@@ -183,7 +183,7 @@ function renderHome(quizzes, fortuneTools) {
       </div>
     </section>
 
-    main>`;
+  </main>`;
 
   return baseLayout({
     title: '無料占い・姓名判断・血液型占い・四柱推命診断まとめ - しんだんラボ',
@@ -223,7 +223,7 @@ function renderQuizPage(quiz) {
       </div>
     </section>
 
-    main>
+  </main>
 
   <script>window.__QUIZ__ = ${JSON.stringify(quiz)};</script>
   <script src="/js/quiz-app.js"></script>
@@ -771,10 +771,6 @@ function renderMeimeiResult(sei, mei, calcResult) {
 }
 
 module.exports = {
-  baseLayout,
-  escapeHtml,
-  safeJsonLd,
-  siteHeaderNav,
   renderHome,
   renderQuizPage,
   renderResultPage,

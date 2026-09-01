@@ -28,5 +28,19 @@ jobs:
           node --check server-quality-entry.js
           node --check scripts/test-quality.js
 
+      - name: Diagnose server startup
+        run: |
+          PORT=3013 SITE_URL=http://127.0.0.1:3013 node server-quality-entry.js > /tmp/quality-server.log 2>&1 &
+          server_pid=$!
+          sleep 2
+          cat /tmp/quality-server.log
+          if ! kill -0 "$server_pid" 2>/dev/null; then
+            echo "Quality server exited before validation."
+            exit 1
+          fi
+          curl -fsS http://127.0.0.1:3013/ >/tmp/quality-home.html
+          grep -q "しんだんラボについて" /tmp/quality-home.html
+          kill "$server_pid"
+
       - name: Test all Japanese pages and results
         run: node scripts/test-quality.js

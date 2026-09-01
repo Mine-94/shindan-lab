@@ -37,8 +37,8 @@ jobs:
         if: always()
         run: cat /tmp/japan-trend-report.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Add meaningful findings to the monitoring issue
-        if: steps.monitor.outputs.signal_count != '0' || steps.monitor.outputs.error_count != '0'
+      - name: Append every daily check to one monitoring issue
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -51,7 +51,7 @@ jobs:
           if [ -z "$issue_number" ]; then
             issue_url=$(gh issue create \
               --title '日本診断トレンド監視' \
-              --body 'Google Trends Japan・Bing News Japanの公開シグナルと、しんだんラボの稼働状態を毎日確認します。新規診断は自動公開せず、意味のある発見だけをこのIssueに記録します。')
+              --body 'Google Trends Japan・Bing News Japanの公開シグナルと、しんだんラボの稼働状態を毎日確認します。特記事項がない日も一行ではなく点検結果を残し、新規診断は自動公開しません。Yahoo! JAPAN・X・Instagram・Threads・YouTubeなどは手動調査で補完します。')
             issue_number=${issue_url##*/}
           fi
 

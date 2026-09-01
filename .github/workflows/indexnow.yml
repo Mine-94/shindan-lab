@@ -27,30 +27,47 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Wait until the latest Render deployment is reachable
+      - name: Wait for the verified 88-page Render deployment
         env:
           SITE_URL: https://shindan-lab.onrender.com
           INDEXNOW_KEY: c43e252ab66ef069ad3bbb37b081739d
         run: |
           ready=0
-          for attempt in $(seq 1 24); do
+          for attempt in $(seq 1 30); do
+            key_ok=0
+            sitemap_ok=0
+
             if curl -fsS --max-time 30 "$SITE_URL/$INDEXNOW_KEY.txt" | grep -qx "$INDEXNOW_KEY"; then
+              key_ok=1
+            fi
+
+            if curl -fsS --max-time 45 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml; then
+              url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
+              if [ "$url_count" = '88' ] \
+                && grep -q '/about.html</loc>' /tmp/sitemap.xml \
+                && grep -q '/editorial-policy.html</loc>' /tmp/sitemap.xml; then
+                sitemap_ok=1
+              fi
+            fi
+
+            if [ "$key_ok" -eq 1 ] && [ "$sitemap_ok" -eq 1 ]; then
               ready=1
               break
             fi
             sleep 10
           done
+
           if [ "$ready" -ne 1 ]; then
-            echo "The deployed IndexNow key could not be verified."
+            echo "The verified 88-page deployment or IndexNow key could not be confirmed."
             exit 1
           fi
+          echo "Verified the deployed IndexNow key and all 88 sitemap URLs."
 
       - name: Build URL list from the deployed sitemap
         env:
           SITE_URL: https://shindan-lab.onrender.com
           INDEXNOW_KEY: c43e252ab66ef069ad3bbb37b081739d
         run: |
-          curl -fsS --retry 5 --retry-delay 5 --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
           python - <<'PY'
           import json
           import os
@@ -67,10 +84,8 @@ jobs:
                       urls.append(value)
 
           urls = list(dict.fromkeys(urls))
-          if not urls:
-              raise SystemExit('No same-site URLs were found in the deployed sitemap.')
-          if len(urls) > 10000:
-              raise SystemExit(f'Too many URLs for one IndexNow request: {len(urls)}')
+          if len(urls) != 88:
+              raise SystemExit(f'Expected 88 verified URLs, found {len(urls)}.')
 
           payload = {
               'host': 'shindan-lab.onrender.com',
@@ -96,4 +111,4 @@ jobs:
             echo "IndexNow returned HTTP $status"
             exit 1
           fi
-          echo "IndexNow accepted the submission with HTTP $status."
+          echo "IndexNow accepted the 88-URL submission with HTTP $status."

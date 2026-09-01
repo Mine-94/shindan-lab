@@ -1,0 +1,64 @@
+name: Verify Japanese quality update on live Render site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-live-quality.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for the new Render deployment
+        run: |
+          ready=0
+          for attempt in $(seq 1 30); do
+            curl -fsS --max-time 45 https://shindan-lab.onrender.com/ -o /tmp/home.html || true
+            curl -fsS --max-time 45 https://shindan-lab.onrender.com/sitemap.xml -o /tmp/sitemap.xml || true
+            if grep -q '目的から診断を選ぶ' /tmp/home.html 2>/dev/null \
+              && grep -q '/about.html</loc>' /tmp/sitemap.xml 2>/dev/null \
+              && [ "$(grep -o '<url>' /tmp/sitemap.xml 2>/dev/null | wc -l | tr -d ' ')" = '88' ]; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'The validated commit was not visible on the live site.'
+            exit 1
+          fi
+
+      - name: Verify live home, quiz, result, policies and sitemap
+        run: |
+          curl -fsS --max-time 45 https://shindan-lab.onrender.com/ -o /tmp/home.html
+          curl -fsS --max-time 45 https://shindan-lab.onrender.com/q/oshikatsu-type -o /tmp/quiz.html
+          curl -fsS --max-time 45 'https://shindan-lab.onrender.com/q/oshikatsu-type/r/kamiseki?s=75' -o /tmp/result.html
+          curl -fsS --max-time 45 https://shindan-lab.onrender.com/about.html -o /tmp/about.html
+          curl -fsS --max-time 45 https://shindan-lab.onrender.com/editorial-policy.html -o /tmp/policy.html
+          curl -fsS --max-time 45 https://shindan-lab.onrender.com/sitemap.xml -o /tmp/sitemap.xml
+
+          grep -q 'しんだんラボについて' /tmp/home.html
+          grep -q '目的から診断を選ぶ' /tmp/home.html
+          grep -q '現場へ動く行動力' /tmp/quiz.html
+          grep -q '今日からできること' /tmp/result.html
+          grep -q '結果の限界を隠しません' /tmp/about.html
+          grep -q '他サイトの文章をコピーしません' /tmp/policy.html
+          grep -q '/editorial-policy.html</loc>' /tmp/sitemap.xml
+
+          python3 - <<'PY'
+          from pathlib import Path
+          home = Path('/tmp/home.html').read_text(encoding='utf-8')
+          quiz = Path('/tmp/quiz.html').read_text(encoding='utf-8')
+          sitemap = Path('/tmp/sitemap.xml').read_text(encoding='utf-8')
+          assert '\nmain>' not in home
+          assert '\nmain>' not in quiz
+          assert sitemap.count('<url>') == 88
+          assert '"@type":"FAQPage"' in home
+          print('LIVE PASS: home, quiz, result, policies and 88 sitemap URLs verified.')
+          PY

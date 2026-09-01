@@ -1,0 +1,57 @@
+name: Apply Japanese homepage priority ordering
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-home-priority.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply assertion-based homepage migration
+        run: python3 scripts/apply_home_priority.py
+
+      - name: Validate source syntax
+        run: |
+          python3 -m py_compile scripts/apply_home_priority.py
+          node --check data/home-priority.js
+          node --check views/type16-render.js
+          node --check public/js/home-priority.js
+          node --check scripts/test-home-priority.js
+          node --check scripts/test-quality.js
+
+      - name: Validate priority model
+        run: node scripts/test-home-priority.js
+
+      - name: Run existing regression suite
+        run: bash run_tests.sh
+
+      - name: Run full integration suite
+        run: node scripts/test-quality.js
+
+      - name: Commit tested homepage changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add views/type16-render.js public/css/type16.css scripts/test-quality.js docs/japan-seo-daily-log.md
+          if git diff --cached --quiet; then
+            echo "No homepage changes were needed."
+            exit 0
+          fi
+          git commit -m "Prioritize Japanese homepage content using data signals"
+          git push origin main

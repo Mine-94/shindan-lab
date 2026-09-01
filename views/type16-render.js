@@ -11,6 +11,11 @@ const {
   getType16,
   calculateCompatibility,
 } = require('../data/type16');
+const {
+  HOME_PRIORITY_VERSION,
+  HOME_PRIORITY_ITEMS,
+  sortByPriority,
+} = require('../data/home-priority');
 
 const GROUPS = {
   NT: {
@@ -182,53 +187,97 @@ function typeGridHtml(escapeHtml) {
     .join('');
 }
 
+function homePriorityAttributes(itemId, rank) {
+  const item = HOME_PRIORITY_ITEMS[itemId];
+  if (!item) throw new Error(`Unknown homepage priority item: ${itemId}`);
+  return [
+    `data-home-priority-id="${itemId}"`,
+    `data-home-priority-rank="${rank}"`,
+    `data-home-priority-score="${item.score.toFixed(1)}"`,
+  ].join(' ');
+}
+
+function homePriorityBadge(rank) {
+  return `<span class="home-priority-badge">データ優先 ${rank}位</span>`;
+}
+
 function homeType16Block() {
   return `
-    <section class="content-section type16-home-section" aria-labelledby="type16-home-title">
-      <div class="type16-section-heading">
+    <section class="content-section type16-home-section home-priority-section" aria-labelledby="type16-home-title" data-home-priority-version="${HOME_PRIORITY_VERSION}">
+      <div class="type16-section-heading home-priority-heading">
         <div>
-          <p class="content-kicker">16 TYPE</p>
-          <h2 class="section-title" id="type16-home-title">16タイプ・MBTI関連</h2>
-          <p>MBTI関連でよく見かける4文字タイプを、公式MBTI®とは別の独自質問と解説で楽しめます。タイプを調べる、二人の相性を見る、16タイプ一覧を読む、の3つから選べます。</p>
+          <p class="content-kicker">DATA PRIORITY</p>
+          <h2 class="section-title" id="type16-home-title">16タイプ・MBTI関連を中心に、今おすすめの診断</h2>
+          <p>日本の公開調査、実サービスの利用行動、検索意図、初めて使う人の始めやすさを点数化し、上位3件を先に表示しています。</p>
+          <p class="home-priority-method">編集順位の最終更新: 2026年9月2日。サイト内の実測データが十分にたまった後は、クリック率・完了率・共有率を優先して見直します。</p>
         </div>
         <a class="type16-text-link" href="/16type">16タイプ一覧を見る →</a>
       </div>
-      <div class="quiz-grid">
-        <a href="/16type/test" class="quiz-card" style="--accent:#6f5cd7">
+      <div class="quiz-grid home-priority-grid">
+        <a href="/16type/test" class="quiz-card home-priority-card" style="--accent:#6f5cd7" ${homePriorityAttributes('type16-test', 1)}>
+          ${homePriorityBadge(1)}
           <div class="quiz-card-badge">🧩</div>
           <h2>16タイプ簡易診断</h2>
           <p>20問でE/I・S/N・T/F・J/Pの今の傾向をチェック</p>
           <span class="quiz-card-cta">無料で診断する →</span>
         </a>
-        <a href="/16type/compatibility" class="quiz-card" style="--accent:#e26d8a">
+        <a href="/16type/compatibility" class="quiz-card home-priority-card" style="--accent:#e26d8a" ${homePriorityAttributes('type16-compatibility', 2)}>
+          ${homePriorityBadge(2)}
           <div class="quiz-card-badge">💞</div>
           <h2>16タイプ相性チェック</h2>
           <p>恋愛・友達・仕事・家族に分けて、二人の違いと会話のコツを確認</p>
           <span class="quiz-card-cta">相性を見る →</span>
         </a>
-        <a href="/16type" class="quiz-card" style="--accent:#3f7d8a">
-          <div class="quiz-card-badge">🔤</div>
-          <h2>16タイプ性格一覧</h2>
-          <p>16タイプそれぞれの強み・注意点・恋愛・友情・仕事を詳しく解説</p>
-          <span class="quiz-card-cta">タイプを選ぶ →</span>
+        <a href="/q/oshikatsu-type" class="quiz-card home-priority-card" style="--accent:#ff5c8a" ${homePriorityAttributes('quiz:oshikatsu-type', 3)}>
+          ${homePriorityBadge(3)}
+          <div class="quiz-card-badge">💗</div>
+          <h2>あなたの推し活タイプ診断</h2>
+          <p>現場・共有・自分のペース・深掘りから、今の推し方を言葉にする</p>
+          <span class="quiz-card-cta">診断スタート →</span>
         </a>
       </div>
-    </section>`;
+    </section>
+    <script src="/js/home-priority.js"></script>`;
 }
 
 function insertType16HomeBlock(html) {
-  const anchors = [
-    '<section class="info-card site-guide" aria-labelledby="about-shindan-lab">',
-    '<section class="info-card site-guide"',
-    '</main>',
-  ];
-  for (const anchor of anchors) {
-    const index = html.indexOf(anchor);
-    if (index !== -1) {
-      return `${html.slice(0, index)}${homeType16Block()}\n    ${html.slice(index)}`;
-    }
+  const anchor = '<main class="container">';
+  const index = html.indexOf(anchor);
+  if (index === -1) {
+    throw new Error('Could not find the main container for the homepage priority section');
   }
-  throw new Error('Could not find a home insertion anchor for the 16-type section');
+  const insertAt = index + anchor.length;
+  return `${html.slice(0, insertAt)}\n${homeType16Block()}\n${html.slice(insertAt)}`;
+}
+
+function findHomeSection(html, title) {
+  const heading = `<h2 class="section-title">${title}</h2>`;
+  const headingIndex = html.indexOf(heading);
+  if (headingIndex === -1) throw new Error(`Missing homepage section heading: ${title}`);
+
+  const start = html.lastIndexOf('<section class="content-section">', headingIndex);
+  const closingTag = '</section>';
+  const closingIndex = html.indexOf(closingTag, headingIndex);
+  if (start === -1 || closingIndex === -1) {
+    throw new Error(`Could not isolate homepage section: ${title}`);
+  }
+
+  const end = closingIndex + closingTag.length;
+  return { start, end, content: html.slice(start, end) };
+}
+
+function reorderCoreHomeSections(html) {
+  const fortune = findHomeSection(html, '占い');
+  const quizzes = findHomeSection(html, 'タイプ診断');
+  if (quizzes.start < fortune.start) return html;
+
+  return [
+    html.slice(0, fortune.start),
+    quizzes.content,
+    html.slice(fortune.end, quizzes.start),
+    fortune.content,
+    html.slice(quizzes.end),
+  ].join('');
 }
 
 function axisExplanationHtml(escapeHtml) {
@@ -316,7 +365,14 @@ function createType16Renderers(original) {
   const siteName = original.SITE_NAME || 'しんだんラボ';
 
   function renderHome(quizzes, fortuneTools) {
-    return withType16Styles(insertType16HomeBlock(original.renderHome(quizzes, fortuneTools)));
+    const sortedQuizzes = sortByPriority(quizzes, (quiz) => `quiz:${quiz.id}`);
+    const sortedFortuneTools = sortByPriority(
+      fortuneTools,
+      (tool) => `fortune:${tool.id}`
+    );
+    const baseHome = original.renderHome(sortedQuizzes, sortedFortuneTools);
+    const reorderedHome = reorderCoreHomeSections(baseHome);
+    return withType16Styles(insertType16HomeBlock(reorderedHome));
   }
 
   function renderType16Hub() {

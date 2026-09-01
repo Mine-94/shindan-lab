@@ -73,6 +73,45 @@ async function main() {
     assert(home.text.includes('しんだんラボについて'), 'Home explanation is missing');
     assert(home.text.includes('目的から診断を選ぶ'), 'Home guide is missing');
     assert(home.text.includes('16タイプ・MBTI関連'), 'Home 16-type section is missing');
+
+    const priorityIndex = home.text.indexOf('data-home-priority-version="2026-09-02"');
+    const quizSectionIndex = home.text.indexOf('<h2 class="section-title">タイプ診断</h2>');
+    const fortuneSectionIndex = home.text.indexOf('<h2 class="section-title">占い</h2>');
+    assert(
+      priorityIndex !== -1 && priorityIndex < quizSectionIndex && quizSectionIndex < fortuneSectionIndex,
+      'Homepage priority section must be first, followed by quizzes and fortune'
+    );
+
+    const firstPriority = home.text.indexOf('data-home-priority-id="type16-test"');
+    const secondPriority = home.text.indexOf('data-home-priority-id="type16-compatibility"');
+    const thirdPriority = home.text.indexOf('data-home-priority-id="quiz:oshikatsu-type"');
+    assert(
+      firstPriority < secondPriority && secondPriority < thirdPriority,
+      'Top three homepage priority cards are out of order'
+    );
+    assert(home.text.includes('/js/home-priority.js'), 'Homepage priority tracking is missing');
+
+    const quizSection = home.text.slice(
+      quizSectionIndex,
+      home.text.indexOf('</section>', quizSectionIndex)
+    );
+    assert(
+      quizSection.indexOf('/q/oshikatsu-type') < quizSection.indexOf('/q/honto-no-seikaku') &&
+        quizSection.indexOf('/q/honto-no-seikaku') < quizSection.indexOf('/q/kakure-chara') &&
+        quizSection.indexOf('/q/kakure-chara') < quizSection.indexOf('/q/jinsei-balance-game'),
+      'Quiz cards are not rendered in data-priority order'
+    );
+
+    const fortuneSection = home.text.slice(
+      fortuneSectionIndex,
+      home.text.indexOf('</section>', fortuneSectionIndex)
+    );
+    assert(
+      fortuneSection.indexOf('href="/ketsueki"') < fortuneSection.indexOf('href="/shichuu"') &&
+        fortuneSection.indexOf('href="/shichuu"') < fortuneSection.indexOf('href="/meimei"'),
+      'Fortune cards are not rendered in data-priority order'
+    );
+
     assert(home.text.includes('"@type":"FAQPage"'), 'Home FAQ structured data is missing');
     assert(home.text.includes('/css/quality.css'), 'Quality stylesheet is missing');
     assert(home.text.includes('href="/about.html"'), 'About footer link is missing');

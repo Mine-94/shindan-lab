@@ -782,4 +782,7 @@ module.exports = {
   renderMeimeiResult,
   SITE_NAME,
   SITE_URL,
+  baseLayout,
+  escapeHtml,
+  siteHeaderNav,
 };

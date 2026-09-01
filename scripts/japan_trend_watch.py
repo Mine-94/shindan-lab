@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Iterable
 
 USER_AGENT = (
-    "Mozilla/5.0 (compatible; ShindanLabTrendMonitor/1.0; "
+    "Mozilla/5.0 (compatible; ShindanLabTrendMonitor/1.1; "
     "+https://shindan-lab.onrender.com/about.html)"
 )
 SITE_URL = "https://shindan-lab.onrender.com"
@@ -26,12 +26,17 @@ KEYWORDS = (
     "占い",
     "恋愛タイプ",
     "ラブタイプ",
+    "恋愛MBTI",
     "相性",
     "推し活",
     "推しタイプ",
     "性格タイプ",
     "MBTI",
+    "MBTI診断",
+    "MBTI相性",
     "16タイプ",
+    "16タイプ診断",
+    "16タイプ相性",
     "64タイプ",
     "四柱推命",
     "姓名判断",
@@ -100,7 +105,8 @@ def google_trends_signals() -> tuple[list[Signal], str | None]:
 
 def bing_news_urls() -> Iterable[tuple[str, str]]:
     queries = (
-        "恋愛タイプ診断 OR 推し活診断 OR 性格診断 OR 16タイプ診断 OR 64タイプ診断",
+        "MBTI診断 OR MBTI相性 OR 恋愛MBTI OR 16タイプ診断 OR 16タイプ相性 OR 64タイプ診断",
+        "恋愛タイプ診断 OR ラブタイプ診断 OR 推し活診断 OR 性格診断",
         "姓名判断 OR 四柱推命 OR 血液型占い OR 今日の運勢",
     )
     for query in queries:
@@ -148,7 +154,7 @@ def bing_news_signals() -> tuple[list[Signal], list[str]]:
             detail = published.strftime("公開: %Y-%m-%d %H:%M UTC") if published else "公開日時不明"
             signals.append(Signal(source="Bing News Japan", title=title, link=link, detail=detail))
 
-    return signals[:10], errors
+    return signals[:12], errors
 
 
 def site_health() -> tuple[list[str], list[str]]:
@@ -156,9 +162,13 @@ def site_health() -> tuple[list[str], list[str]]:
     errors: list[str] = []
     checks = {
         "ホーム": (f"{SITE_URL}/", "しんだんラボ"),
-        "サイトマップ": (f"{SITE_URL}/sitemap.xml", "<urlset"),
+        "サイトマップ": (f"{SITE_URL}/sitemap.xml", "/16type/r/ENFP</loc>"),
         "運営方針": (f"{SITE_URL}/about.html", "しんだんラボについて"),
         "編集ポリシー": (f"{SITE_URL}/editorial-policy.html", "編集・診断ポリシー"),
+        "16タイプ一覧": (f"{SITE_URL}/16type", "16タイプ性格一覧"),
+        "16タイプ簡易診断": (f"{SITE_URL}/16type/test", "window.__TYPE16_TEST__"),
+        "16タイプ相性": (f"{SITE_URL}/16type/compatibility", "16タイプ相性チェック"),
+        "16タイプ詳細": (f"{SITE_URL}/16type/r/ENFP", "恋愛で出やすい傾向"),
     }
     for label, (url, expected) in checks.items():
         try:
@@ -211,6 +221,8 @@ def render_report(signals: list[Signal], health_ok: list[str], errors: list[str]
             "### 判断ルール",
             "- 新規診断を自動生成・公開しません。",
             "- 検出語が既存診断と重なる場合は、まず既存ページの説明・結果・共有率を確認します。",
+            "- MBTIという検索語を追跡しても、公式MBTI®と無料16タイプ診断を同一のものとして扱いません。",
+            "- 16タイプ相性の個別組み合わせページを検索量だけで大量生成せず、利用データと固有解説を確認してから拡張します。",
             "- Yahoo! JAPAN リアルタイム検索、X、Instagram、Threads、YouTube、Naver DataLab は安定した公開APIがないため、この自動点検だけで判断せず手動調査で補完します。",
             "- Firefox はブラウザであり検索エンジンではないため、利用者が選択した検索サービス側のデータとして扱います。",
         ]

@@ -46,13 +46,13 @@ jobs:
       - name: Run full integration suite
         run: node scripts/test-quality.js
 
-      - name: Commit only the tested production changes
+      - name: Commit tested application changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add server.js views/render.js run_tests.sh scripts/test-quality.js package.json README.md docs/japan-seo-daily-log.md .github/workflows/indexnow.yml .github/workflows/verify-live-quality.yml
+          git add server.js views/render.js run_tests.sh scripts/test-quality.js package.json README.md docs/japan-seo-daily-log.md
           if git diff --cached --quiet; then
-            echo "No production changes were needed."
+            echo "No production application changes were needed."
             exit 0
           fi
           git commit -m "Add Japanese 16-type test, compatibility and type guides"

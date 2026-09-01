@@ -1,0 +1,32 @@
+name: Validate Japanese quality wrapper
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/validate-quality-wrapper.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check views/quality-render.js
+          node --check data/quiz-editorial.js
+          node --check server-quality-entry.js
+          node --check scripts/test-quality.js
+
+      - name: Test all Japanese pages and results
+        run: node scripts/test-quality.js

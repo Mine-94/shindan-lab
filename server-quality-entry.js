@@ -5,7 +5,9 @@ const express = require('express');
 const originalRender = require('./views/render');
 const { createQualityRenderers } = require('./views/quality-render');
 
-Object.assign(originalRender, createQualityRenderers(originalRender));
+// ラッパー内から参照する原関数を先にコピーし、自己再呼び出しを防ぎます。
+const baseRender = { ...originalRender };
+Object.assign(originalRender, createQualityRenderers(baseRender));
 
 // 既存のsitemap生成ロジックを保ちつつ、今回追加した信頼ページだけを追記します。
 const originalSend = express.response.send;

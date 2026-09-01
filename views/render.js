@@ -771,6 +771,10 @@ function renderMeimeiResult(sei, mei, calcResult) {
 }
 
 module.exports = {
+  baseLayout,
+  escapeHtml,
+  safeJsonLd,
+  siteHeaderNav,
   renderHome,
   renderQuizPage,
   renderResultPage,

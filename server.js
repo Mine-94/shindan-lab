@@ -5,9 +5,12 @@ const quizzes = require('./data/quizzes');
 const fortuneTools = require('./data/fortune-tools');
 const { STEM_KEYS, BLOOD_TYPES, calcShichuuStem, calcSeimeiHandan } = require('./lib/fortune');
 const { allMeimeiCombos } = require('./data/seo-longtail');
+const { TYPE16_CODES, normalizeType16Code } = require('./data/type16');
 const originalRender = require('./views/render');
 const { createQualityRenderers } = require('./views/quality-render');
 Object.assign(originalRender, createQualityRenderers({ ...originalRender }));
+const { createType16Renderers } = require('./views/type16-render');
+Object.assign(originalRender, createType16Renderers({ ...originalRender }));
 const {
   renderHome,
   renderQuizPage,
@@ -18,6 +21,10 @@ const {
   renderKetsuekiResult,
   renderMeimeiForm,
   renderMeimeiResult,
+  renderType16Hub,
+  renderType16Test,
+  renderType16Result,
+  renderType16Compatibility,
   SITE_URL,
 } = originalRender;
 
@@ -65,6 +72,10 @@ app.get('/sitemap.xml', (req, res) => {
     '/ketsueki',
     '/meimei',
     ...quizzes.map((q) => `/q/${q.id}`),
+    '/16type',
+    '/16type/test',
+    '/16type/compatibility',
+    ...TYPE16_CODES.map((code) => `/16type/r/${code}`),
     '/about.html',
     '/editorial-policy.html',
     '/privacy.html',
@@ -119,6 +130,25 @@ app.get('/q/:id/r/:resultKey', (req, res) => {
   const scoreRaw = parseInt(req.query.s, 10);
   const matchScore = Number.isInteger(scoreRaw) && scoreRaw >= 0 && scoreRaw <= 100 ? scoreRaw : null;
   res.send(renderResultPage(quiz, req.params.resultKey, matchScore));
+});
+
+// --- 16タイプ診断・相性チェック（公式MBTIとは別の独自コンテンツ） ---
+app.get('/16type', (req, res) => {
+  res.send(renderType16Hub());
+});
+
+app.get('/16type/test', (req, res) => {
+  res.send(renderType16Test());
+});
+
+app.get('/16type/r/:code', (req, res) => {
+  const code = normalizeType16Code(req.params.code);
+  if (!TYPE16_CODES.includes(code)) return res.redirect('/16type');
+  res.send(renderType16Result(code, req.query));
+});
+
+app.get('/16type/compatibility', (req, res) => {
+  res.send(renderType16Compatibility(req.query));
 });
 
 // --- 簡易四柱推命（十干タイプ診断） ---

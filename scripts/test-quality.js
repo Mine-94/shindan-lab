@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const quizzes = require('../data/quizzes');
 const editorial = require('../data/quiz-editorial');
+const { TYPE16_CODES } = require('../data/type16');
 
 const PORT = 3012;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -71,6 +72,7 @@ async function main() {
     assert(home.response.status === 200, 'Home did not return 200');
     assert(home.text.includes('しんだんラボについて'), 'Home explanation is missing');
     assert(home.text.includes('目的から診断を選ぶ'), 'Home guide is missing');
+    assert(home.text.includes('16タイプ・MBTI関連'), 'Home 16-type section is missing');
     assert(home.text.includes('"@type":"FAQPage"'), 'Home FAQ structured data is missing');
     assert(home.text.includes('/css/quality.css'), 'Quality stylesheet is missing');
     assert(home.text.includes('href="/about.html"'), 'About footer link is missing');
@@ -92,6 +94,32 @@ async function main() {
       !personality.text.includes('MBTIだけじゃ分からない'),
       'Unnecessary MBTI wording remains'
     );
+
+    const type16Hub = await fetchText('/16type');
+    assert(type16Hub.response.status === 200, '16-type hub did not return 200');
+    assert(type16Hub.text.includes('16タイプ性格一覧'), '16-type hub heading is missing');
+    assert(type16Hub.text.includes('公式MBTI®ではありません'), 'Official MBTI distinction is missing');
+
+    const type16Test = await fetchText('/16type/test');
+    assert(type16Test.response.status === 200, '16-type test did not return 200');
+    assert(type16Test.text.includes('window.__TYPE16_TEST__'), '16-type test data is missing');
+
+    for (const code of TYPE16_CODES) {
+      const typeResult = await fetchText(`/16type/r/${code}`);
+      assert(typeResult.response.status === 200, `16-type result did not return 200: ${code}`);
+      assert(typeResult.text.includes(code), `16-type code missing from result: ${code}`);
+      assert(
+        typeResult.text.includes('恋愛で出やすい傾向'),
+        `Love guidance missing from 16-type result: ${code}`
+      );
+    }
+
+    const type16Compatibility = await fetchText(
+      '/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend'
+    );
+    assert(type16Compatibility.response.status === 200, '16-type compatibility did not return 200');
+    assert(type16Compatibility.text.includes('友達の相性目安'), 'Compatibility context is missing');
+    assert(type16Compatibility.text.includes('noindex, follow'), 'Query result noindex is missing');
 
     for (const quiz of quizzes) {
       for (const resultKey of Object.keys(quiz.results)) {
@@ -128,10 +156,10 @@ async function main() {
       'Editorial policy is missing from sitemap'
     );
     const urlCount = (sitemap.text.match(/<url>/g) || []).length;
-    assert(urlCount === 88, `Unexpected sitemap URL count: ${urlCount}`);
+    assert(urlCount === 107, `Unexpected sitemap URL count: ${urlCount}`);
 
     console.log(`PASS: ${quizzes.length} quizzes and all result pages passed quality checks.`);
-    console.log('PASS: home, trust pages, structured data, HTML and sitemap checks passed.');
+    console.log('PASS: home, trust pages, 16-type pages, structured data, HTML and sitemap checks passed.');
   } finally {
     child.kill('SIGTERM');
     await new Promise((resolve) => {

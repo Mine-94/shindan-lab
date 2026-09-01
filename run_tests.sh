@@ -114,12 +114,12 @@ check_contains "sitemapに有名人ロングテール含む(大谷翔平)" "$BAS
 
 curl -s "$BASE/sitemap.xml" -o /tmp/shindan_resp.html
 url_count=$(grep -o '<url>' /tmp/shindan_resp.html | wc -l)
-echo "sitemap内のURL数: $url_count (期待値: 静的12+十干10+血液型単4+血液型ペア10+姓名判断52=88)"
-if [ "$url_count" == "88" ]; then
+echo "sitemap内のURL数: $url_count (期待値: 静的31+十干10+血液型単4+血液型ペア10+姓名判断52=107)"
+if [ "$url_count" == "107" ]; then
   echo "PASS  sitemap URL数が期待通り"
   pass=$((pass+1))
 else
-  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 88)"
+  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 107)"
   fail=$((fail+1))
 fi
 
@@ -167,6 +167,24 @@ check_status "結果(mystery-cat)" "$BASE/q/kakure-chara/r/mystery-cat" 200
 check_status "結果(sharp-fox)" "$BASE/q/kakure-chara/r/sharp-fox" 200
 check_status "結果(sunshine)" "$BASE/q/kakure-chara/r/sunshine" 200
 check_contains "sitemapに/q/kakure-chara含む" "$BASE/sitemap.xml" "/q/kakure-chara</loc>"
+
+echo ""
+echo "=== 16タイプ診断・相性チェック ==="
+check_status "16タイプ一覧" "$BASE/16type" 200
+check_contains "ホームに16タイプ・MBTI関連セクション" "$BASE/" "16タイプ・MBTI関連"
+check_contains "16タイプ一覧に公式MBTIとの区別" "$BASE/16type" "公式MBTI®ではありません"
+check_status "16タイプ簡易診断" "$BASE/16type/test" 200
+check_contains "簡易診断に20問データ" "$BASE/16type/test" "window.__TYPE16_TEST__"
+check_status "16タイプ結果(ENFP)" "$BASE/16type/r/ENFP?e=80&s=20&t=20&j=20" 200
+check_contains "ENFP結果に回答バランス" "$BASE/16type/r/ENFP?e=80&s=20&t=20&j=20" "今回の回答バランス"
+check_contains "ENFP結果に恋愛解説" "$BASE/16type/r/ENFP" "恋愛で出やすい傾向"
+check_redirect_location "不正な16タイプ→一覧" "$BASE/16type/r/XXXX" "/16type"
+check_status "16タイプ相性フォーム" "$BASE/16type/compatibility" 200
+check_status "16タイプ相性結果" "$BASE/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend" 200
+check_contains "相性結果に友達場面" "$BASE/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend" "友達の相性目安"
+check_contains "相性クエリ結果はnoindex" "$BASE/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend" "noindex, follow"
+check_contains "sitemapに16タイプ診断" "$BASE/sitemap.xml" "/16type/test</loc>"
+check_contains "sitemapにENFP詳細" "$BASE/sitemap.xml" "/16type/r/ENFP</loc>"
 
 echo ""
 echo "=== タイプ+一致率結合型(?s=0~100) ==="

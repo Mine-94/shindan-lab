@@ -1,0 +1,137 @@
+/* しんだんラボ — 説明・FAQ・結果解説のための追加スタイル */
+.content-kicker {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #8a6fd8;
+}
+
+.site-guide,
+.quiz-explainer,
+.faq-list {
+  margin-top: 28px;
+}
+
+.site-guide > p,
+.quiz-explainer > p,
+.result-analysis p {
+  line-height: 1.85;
+}
+
+.guide-link-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.guide-link-list a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 16px;
+  border: 1px solid #e6e0f2;
+  border-radius: 14px;
+  background: #fbfaff;
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.guide-link-list a:hover,
+.guide-link-list a:focus-visible {
+  border-color: #8a6fd8;
+  transform: translateY(-1px);
+}
+
+.guide-link-list span {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6d5bb5;
+}
+
+.faq-list details {
+  padding: 14px 0;
+  border-top: 1px solid #ece8f2;
+}
+
+.faq-list details:first-of-type {
+  margin-top: 8px;
+}
+
+.faq-list summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.faq-list details p {
+  margin: 10px 0 0;
+  line-height: 1.8;
+}
+
+.axis-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+  margin: 14px 0 18px;
+  padding-left: 1.25rem;
+}
+
+.small-note {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f7f5fb;
+  font-size: 0.9rem;
+  color: #5d5868;
+}
+
+.result-analysis {
+  margin: 26px 0;
+  padding-top: 24px;
+  border-top: 1px solid #e9e4ef;
+  text-align: left;
+}
+
+.result-analysis h2 {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 1.25rem;
+}
+
+.result-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.result-analysis-grid > div {
+  padding: 16px;
+  border: 1px solid #e9e4ef;
+  border-radius: 14px;
+  background: #fcfbfe;
+}
+
+.result-analysis-label {
+  margin: 0 0 7px !important;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--accent, #6d5bb5);
+}
+
+.result-analysis-grid p:last-child {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .guide-link-list a {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .axis-list,
+  .result-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}

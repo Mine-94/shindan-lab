@@ -24,11 +24,11 @@ jobs:
         run: npm ci
 
       - name: Apply assertion-based production migration
-        run: python3 scripts/enable_type16.py
+        run: python3 scripts/enable_type16_v2.py
 
       - name: Validate source syntax
         run: |
-          python3 -m py_compile scripts/enable_type16.py
+          python3 -m py_compile scripts/enable_type16.py scripts/enable_type16_v2.py
           node --check data/type16.js
           node --check views/type16-render.js
           node --check public/js/type16-test.js

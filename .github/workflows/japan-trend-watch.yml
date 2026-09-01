@@ -1,0 +1,58 @@
+name: Daily Japanese diagnosis trend watch
+
+on:
+  schedule:
+    - cron: '15 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: shindan-lab-japan-trend-watch
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Collect Japanese search and content signals
+        id: monitor
+        continue-on-error: true
+        env:
+          TREND_REPORT_PATH: /tmp/japan-trend-report.md
+        run: python3 scripts/japan_trend_watch.py
+
+      - name: Publish daily report in the workflow summary
+        if: always()
+        run: cat /tmp/japan-trend-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Add meaningful findings to the monitoring issue
+        if: steps.monitor.outputs.signal_count != '0' || steps.monitor.outputs.error_count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          issue_number=$(gh issue list \
+            --state open \
+            --search '日本診断トレンド監視 in:title' \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [ -z "$issue_number" ]; then
+            issue_url=$(gh issue create \
+              --title '日本診断トレンド監視' \
+              --body 'Google Trends Japan・Bing News Japanの公開シグナルと、しんだんラボの稼働状態を毎日確認します。新規診断は自動公開せず、意味のある発見だけをこのIssueに記録します。')
+            issue_number=${issue_url##*/}
+          fi
+
+          gh issue comment "$issue_number" --body-file /tmp/japan-trend-report.md
+
+      - name: Fail only when the production site health check failed
+        if: steps.monitor.outputs.health_error_count != '0'
+        run: |
+          echo "One or more production health checks failed."
+          exit 1

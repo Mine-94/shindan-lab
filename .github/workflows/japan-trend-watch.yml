@@ -1,6 +1,12 @@
 name: Daily Japanese diagnosis trend watch
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/japan-trend-watch.yml
+      - scripts/japan_trend_watch.py
   schedule:
     - cron: '15 0 * * *'
   workflow_dispatch:

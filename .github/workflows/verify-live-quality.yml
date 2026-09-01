@@ -26,7 +26,8 @@ jobs:
           for attempt in $(seq 1 30); do
             curl -fsS --max-time 45 https://shindan-lab.onrender.com/ -o /tmp/home.html || true
             curl -fsS --max-time 45 https://shindan-lab.onrender.com/sitemap.xml -o /tmp/sitemap.xml || true
-            if grep -q '16タイプ・MBTI関連' /tmp/home.html 2>/dev/null \
+            if grep -q 'data-home-priority-version="2026-09-02"' /tmp/home.html 2>/dev/null \
+              && grep -q '/js/home-priority.js' /tmp/home.html 2>/dev/null \
               && grep -q '/16type/r/ENFP</loc>' /tmp/sitemap.xml 2>/dev/null \
               && [ "$(grep -o '<url>' /tmp/sitemap.xml 2>/dev/null | wc -l | tr -d ' ')" = '107' ]; then
               ready=1
@@ -35,11 +36,11 @@ jobs:
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'The validated 16-type commit was not visible on the live site.'
+            echo 'The data-priority homepage deployment was not visible on the live site.'
             exit 1
           fi
 
-      - name: Verify live home, quizzes, 16-type pages, policies and sitemap
+      - name: Verify live homepage order, quizzes, 16-type pages, policies and sitemap
         run: |
           curl -fsS --max-time 45 https://shindan-lab.onrender.com/ -o /tmp/home.html
           curl -fsS --max-time 45 https://shindan-lab.onrender.com/q/oshikatsu-type -o /tmp/quiz.html
@@ -54,7 +55,11 @@ jobs:
 
           grep -q 'しんだんラボについて' /tmp/home.html
           grep -q '目的から診断を選ぶ' /tmp/home.html
-          grep -q '16タイプ・MBTI関連' /tmp/home.html
+          grep -q '16タイプ・MBTI関連を中心に、今おすすめの診断' /tmp/home.html
+          grep -q 'データ優先 1位' /tmp/home.html
+          grep -q 'データ優先 2位' /tmp/home.html
+          grep -q 'データ優先 3位' /tmp/home.html
+          grep -q '/js/home-priority.js' /tmp/home.html
           grep -q '現場へ動く行動力' /tmp/quiz.html
           grep -q '今日からできること' /tmp/result.html
           grep -q '結果の限界を隠しません' /tmp/about.html
@@ -72,14 +77,37 @@ jobs:
 
           python3 - <<'PY'
           from pathlib import Path
+
           home = Path('/tmp/home.html').read_text(encoding='utf-8')
           quiz = Path('/tmp/quiz.html').read_text(encoding='utf-8')
           sitemap = Path('/tmp/sitemap.xml').read_text(encoding='utf-8')
           type16 = Path('/tmp/type16.html').read_text(encoding='utf-8')
+
+          priority = home.index('data-home-priority-version="2026-09-02"')
+          quiz_section = home.index('<h2 class="section-title">タイプ診断</h2>')
+          fortune_section = home.index('<h2 class="section-title">占い</h2>')
+          assert priority < quiz_section < fortune_section
+
+          first = home.index('data-home-priority-id="type16-test"')
+          second = home.index('data-home-priority-id="type16-compatibility"')
+          third = home.index('data-home-priority-id="quiz:oshikatsu-type"')
+          assert first < second < third
+
+          quiz_end = home.index('</section>', quiz_section)
+          quiz_html = home[quiz_section:quiz_end]
+          assert quiz_html.index('/q/oshikatsu-type') < quiz_html.index('/q/honto-no-seikaku')
+          assert quiz_html.index('/q/honto-no-seikaku') < quiz_html.index('/q/kakure-chara')
+          assert quiz_html.index('/q/kakure-chara') < quiz_html.index('/q/jinsei-balance-game')
+
+          fortune_end = home.index('</section>', fortune_section)
+          fortune_html = home[fortune_section:fortune_end]
+          assert fortune_html.index('href="/ketsueki"') < fortune_html.index('href="/shichuu"')
+          assert fortune_html.index('href="/shichuu"') < fortune_html.index('href="/meimei"')
+
           assert '\nmain>' not in home
           assert '\nmain>' not in quiz
           assert sitemap.count('<url>') == 107
           assert '"@type":"FAQPage"' in home
           assert '"@type":"FAQPage"' in type16
-          print('LIVE PASS: home, existing quizzes, 16-type pages, policies and 107 sitemap URLs verified.')
+          print('LIVE PASS: data-driven homepage order, all core pages and 107 sitemap URLs verified.')
           PY

@@ -5,6 +5,11 @@ on:
     branches:
       - main
     paths:
+      - server.js
+      - views/**
+      - data/**
+      - public/**
+      - package*.json
       - .github/workflows/verify-live-quality.yml
   workflow_dispatch:
 
@@ -21,20 +26,20 @@ jobs:
           for attempt in $(seq 1 30); do
             curl -fsS --max-time 45 https://shindan-lab.onrender.com/ -o /tmp/home.html || true
             curl -fsS --max-time 45 https://shindan-lab.onrender.com/sitemap.xml -o /tmp/sitemap.xml || true
-            if grep -q '目的から診断を選ぶ' /tmp/home.html 2>/dev/null \
-              && grep -q '/about.html</loc>' /tmp/sitemap.xml 2>/dev/null \
-              && [ "$(grep -o '<url>' /tmp/sitemap.xml 2>/dev/null | wc -l | tr -d ' ')" = '88' ]; then
+            if grep -q '16タイプ・MBTI関連' /tmp/home.html 2>/dev/null \
+              && grep -q '/16type/r/ENFP</loc>' /tmp/sitemap.xml 2>/dev/null \
+              && [ "$(grep -o '<url>' /tmp/sitemap.xml 2>/dev/null | wc -l | tr -d ' ')" = '107' ]; then
               ready=1
               break
             fi
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'The validated commit was not visible on the live site.'
+            echo 'The validated 16-type commit was not visible on the live site.'
             exit 1
           fi
 
-      - name: Verify live home, quiz, result, policies and sitemap
+      - name: Verify live home, quizzes, 16-type pages, policies and sitemap
         run: |
           curl -fsS --max-time 45 https://shindan-lab.onrender.com/ -o /tmp/home.html
           curl -fsS --max-time 45 https://shindan-lab.onrender.com/q/oshikatsu-type -o /tmp/quiz.html
@@ -42,23 +47,39 @@ jobs:
           curl -fsS --max-time 45 https://shindan-lab.onrender.com/about.html -o /tmp/about.html
           curl -fsS --max-time 45 https://shindan-lab.onrender.com/editorial-policy.html -o /tmp/policy.html
           curl -fsS --max-time 45 https://shindan-lab.onrender.com/sitemap.xml -o /tmp/sitemap.xml
+          curl -fsS --max-time 45 https://shindan-lab.onrender.com/16type -o /tmp/type16.html
+          curl -fsS --max-time 45 https://shindan-lab.onrender.com/16type/test -o /tmp/type16-test.html
+          curl -fsS --max-time 45 'https://shindan-lab.onrender.com/16type/r/ENFP?e=80&s=20&t=20&j=20' -o /tmp/type16-result.html
+          curl -fsS --max-time 45 'https://shindan-lab.onrender.com/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend' -o /tmp/type16-compat.html
 
           grep -q 'しんだんラボについて' /tmp/home.html
           grep -q '目的から診断を選ぶ' /tmp/home.html
+          grep -q '16タイプ・MBTI関連' /tmp/home.html
           grep -q '現場へ動く行動力' /tmp/quiz.html
           grep -q '今日からできること' /tmp/result.html
           grep -q '結果の限界を隠しません' /tmp/about.html
           grep -q '他サイトの文章をコピーしません' /tmp/policy.html
+          grep -q '16タイプ性格一覧' /tmp/type16.html
+          grep -q '公式MBTI®ではありません' /tmp/type16.html
+          grep -q 'window.__TYPE16_TEST__' /tmp/type16-test.html
+          grep -q '今回の回答バランス' /tmp/type16-result.html
+          grep -q '恋愛で出やすい傾向' /tmp/type16-result.html
+          grep -q '友達の相性目安' /tmp/type16-compat.html
+          grep -q 'noindex, follow' /tmp/type16-compat.html
           grep -q '/editorial-policy.html</loc>' /tmp/sitemap.xml
+          grep -q '/16type/test</loc>' /tmp/sitemap.xml
+          grep -q '/16type/r/ENFP</loc>' /tmp/sitemap.xml
 
           python3 - <<'PY'
           from pathlib import Path
           home = Path('/tmp/home.html').read_text(encoding='utf-8')
           quiz = Path('/tmp/quiz.html').read_text(encoding='utf-8')
           sitemap = Path('/tmp/sitemap.xml').read_text(encoding='utf-8')
+          type16 = Path('/tmp/type16.html').read_text(encoding='utf-8')
           assert '\nmain>' not in home
           assert '\nmain>' not in quiz
-          assert sitemap.count('<url>') == 88
+          assert sitemap.count('<url>') == 107
           assert '"@type":"FAQPage"' in home
-          print('LIVE PASS: home, quiz, result, policies and 88 sitemap URLs verified.')
+          assert '"@type":"FAQPage"' in type16
+          print('LIVE PASS: home, existing quizzes, 16-type pages, policies and 107 sitemap URLs verified.')
           PY

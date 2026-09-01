@@ -22,6 +22,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Correct matcher for both malformed main variants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/apply-2026-09-01-quality.js')
+          source = path.read_text(encoding='utf-8')
+          old = r"""  const malformedMatches = source.match(/\n\s*main>`;/g) || [];
+            if (malformedMatches.length !== 2) {
+              throw new Error(`Expected exactly 2 malformed main closings, found ${malformedMatches.length}`);
+            }
+            source = source.replace(/\n\s*main>`;/g, '\n  </main>`;');"""
+          new = r"""  const malformedMatches = source.match(/\n\s*main>/g) || [];
+            if (malformedMatches.length !== 2) {
+              throw new Error(`Expected exactly 2 malformed main closings, found ${malformedMatches.length}`);
+            }
+            source = source.replace(/\n\s*main>/g, '\n  </main>');"""
+          if old not in source:
+              raise SystemExit('Expected matcher block was not found')
+          path.write_text(source.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Apply quality patch
         run: node scripts/apply-2026-09-01-quality.js
 

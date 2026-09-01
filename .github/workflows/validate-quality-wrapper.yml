@@ -1,5 +1,6 @@
 name: Validate Japanese quality wrapper
 
+# Revision 3: original renderer functions are preserved before wrapping.
 on:
   push:
     branches:

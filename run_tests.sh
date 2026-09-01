@@ -114,12 +114,12 @@ check_contains "sitemapに有名人ロングテール含む(大谷翔平)" "$BAS
 
 curl -s "$BASE/sitemap.xml" -o /tmp/shindan_resp.html
 url_count=$(grep -o '<url>' /tmp/shindan_resp.html | wc -l)
-echo "sitemap内のURL数: $url_count (期待値: 静的10+十干10+血液型単4+血液型ペア10+姓名判断52=86)"
-if [ "$url_count" == "86" ]; then
+echo "sitemap内のURL数: $url_count (期待値: 静的12+十干10+血液型単4+血液型ペア10+姓名判断52=88)"
+if [ "$url_count" == "88" ]; then
   echo "PASS  sitemap URL数が期待通り"
   pass=$((pass+1))
 else
-  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 86)"
+  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 88)"
   fail=$((fail+1))
 fi
 

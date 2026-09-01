@@ -5,6 +5,9 @@ const quizzes = require('./data/quizzes');
 const fortuneTools = require('./data/fortune-tools');
 const { STEM_KEYS, BLOOD_TYPES, calcShichuuStem, calcSeimeiHandan } = require('./lib/fortune');
 const { allMeimeiCombos } = require('./data/seo-longtail');
+const originalRender = require('./views/render');
+const { createQualityRenderers } = require('./views/quality-render');
+Object.assign(originalRender, createQualityRenderers({ ...originalRender }));
 const {
   renderHome,
   renderQuizPage,
@@ -16,7 +19,7 @@ const {
   renderMeimeiForm,
   renderMeimeiResult,
   SITE_URL,
-} = require('./views/render');
+} = originalRender;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -62,6 +65,8 @@ app.get('/sitemap.xml', (req, res) => {
     '/ketsueki',
     '/meimei',
     ...quizzes.map((q) => `/q/${q.id}`),
+    '/about.html',
+    '/editorial-policy.html',
     '/privacy.html',
     '/terms.html',
   ];

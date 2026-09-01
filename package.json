@@ -2,10 +2,10 @@
   "name": "shindan-lab",
   "version": "1.0.0",
   "description": "しんだんラボ - 話題の性格診断・タイプ分け・バランスゲーム集",
-  "main": "server-quality-entry.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node server-quality-entry.js",
-    "dev": "node server-quality-entry.js",
+    "start": "node server.js",
+    "dev": "node server.js",
     "test": "node scripts/test-quality.js"
   },
   "engines": {

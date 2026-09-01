@@ -43,7 +43,7 @@ async function main() {
     }
   }
 
-  const child = spawn(process.execPath, ['server-quality-entry.js'], {
+  const child = spawn(process.execPath, [process.env.SERVER_ENTRY || 'server.js'], {
     cwd: path.resolve(__dirname, '..'),
     env: {
       ...process.env,

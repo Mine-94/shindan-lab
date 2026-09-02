@@ -1,0 +1,66 @@
+name: Enable AdSense content depth
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enable-adsense-content-depth.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shindan-lab-adsense-content-depth
+  cancel-in-progress: false
+
+jobs:
+  integrate-test-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Enable the content-depth layer
+        run: python3 scripts/enable_adsense_content_depth.py
+
+      - name: Validate source syntax
+        run: |
+          python3 -m py_compile scripts/enable_adsense_content_depth.py
+          node --check data/adsense-editorial.js
+          node --check views/adsense-content-render.js
+          node --check scripts/test-adsense-content-depth.js
+          node --check scripts/audit-adsense-content.js
+          node --check server.js
+
+      - name: Validate every new editorial family
+        run: node scripts/test-adsense-content-depth.js
+
+      - name: Run the full shell regression suite
+        run: bash run_tests.sh
+
+      - name: Run all packaged tests and the 60-page content audit
+        run: npm test
+
+      - name: Commit only the tested production integration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            server.js \
+            public/editorial-policy.html \
+            public/contact.html \
+            docs/adsense-approval-readiness-2026-09-02.md \
+            package.json
+          if git diff --cached --quiet; then
+            echo "AdSense content-depth integration is already current."
+            exit 0
+          fi
+          git commit -m "Deepen Japanese content for AdSense review"
+          git push origin main

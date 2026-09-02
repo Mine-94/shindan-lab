@@ -108,9 +108,10 @@ def patch_type16_pages() -> None:
         "16-type compatibility preview",
     )
 
-    if text.count("ogImage: '/og/16type.png'") != 4:
+    preview_count = text.count("ogImage: '/og/16type.png'")
+    if preview_count != 4:
         raise RuntimeError(
-            f"Expected exactly four 16-type preview assignments, found {text.count(\"ogImage: '/og/16type.png'\")}"
+            f"Expected exactly four 16-type preview assignments, found {preview_count}"
         )
     path.write_text(text, encoding="utf-8")
 

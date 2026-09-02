@@ -114,12 +114,12 @@ check_contains "sitemapに有名人ロングテール含む(大谷翔平)" "$BAS
 
 curl -s "$BASE/sitemap.xml" -o /tmp/shindan_resp.html
 url_count=$(grep -o '<url>' /tmp/shindan_resp.html | wc -l)
-echo "sitemap内のURL数: $url_count (期待値: 静的31+十干10+血液型単4+血液型ペア10+姓名判断52=107)"
-if [ "$url_count" == "107" ]; then
+echo "sitemap内のURL数: $url_count (期待値: 静的35+十干10+血液型単4+血液型ペア10+姓名判断52=111)"
+if [ "$url_count" == "111" ]; then
   echo "PASS  sitemap URL数が期待通り"
   pass=$((pass+1))
 else
-  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 107)"
+  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 111)"
   fail=$((fail+1))
 fi
 
@@ -185,6 +185,21 @@ check_contains "相性結果に友達場面" "$BASE/16type/compatibility?self=EN
 check_contains "相性クエリ結果はnoindex" "$BASE/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend" "noindex, follow"
 check_contains "sitemapに16タイプ診断" "$BASE/sitemap.xml" "/16type/test</loc>"
 check_contains "sitemapにENFP詳細" "$BASE/sitemap.xml" "/16type/r/ENFP</loc>"
+
+echo ""
+echo "=== 関係別SEOランディングと招待比較ループ ==="
+check_status "16タイプ恋愛相性ガイド" "$BASE/16type/love" 200
+check_contains "恋愛ガイドに固定relation" "$BASE/16type/love" 'name="relation" value="love"'
+check_status "16タイプ友達相性ガイド" "$BASE/16type/friend" 200
+check_contains "友達ガイドに固定relation" "$BASE/16type/friend" 'name="relation" value="friend"'
+check_status "16タイプ仕事相性ガイド" "$BASE/16type/work" 200
+check_status "16タイプ家族相性ガイド" "$BASE/16type/family" 200
+check_contains "ホームに関係別導線" "$BASE/" "関係から相性を探す"
+check_contains "招待テストに比較元表示" "$BASE/16type/test?compare=ENFP&relation=friend" "ENFPの友達から届いた比較リンク"
+check_contains "比較後結果に相性CTA" "$BASE/16type/r/ISFJ?compare=ENFP&relation=friend" "ENFPとの友達相性を見る"
+check_contains "結果に友達招待ボタン" "$BASE/16type/r/ISFJ" 'data-type16-invite-relation="friend"'
+check_contains "sitemapに恋愛ガイド" "$BASE/sitemap.xml" "/16type/love</loc>"
+check_contains "sitemapに家族ガイド" "$BASE/sitemap.xml" "/16type/family</loc>"
 
 echo ""
 echo "=== タイプ+一致率結合型(?s=0~100) ==="

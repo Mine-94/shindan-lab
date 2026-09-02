@@ -104,3 +104,16 @@ npm start
 ```bash
 ./run_tests.sh
 ```
+
+
+## 16タイプ関係別SEO・招待比較ループ
+
+日本語検索の関係別意図と、SNS共有後の再訪・比較行動を一つにつなぐため、次の導線を実装しています。
+
+- `/16type/love`・`/friend`・`/work`・`/family`: 関係別の独自解説、FAQ、二人のタイプ選択フォーム
+- 16タイプ結果ページ: 友達・恋人へ専用比較リンクを送る招待ボタン
+- 招待リンク経由の診断: 回答後、そのまま二人の相性結果へ進めるCTA
+- 共有リンク・共有画像: UTMを付与し、GA4で流入元を区別
+- GA4: `relation_guide_view`、`relation_guide_submit`、`type16_invite_share`、`share_landing`、`type16_comparison_click`
+
+256組の薄い相性ページは生成せず、検索意図が明確で十分な独自説明を持つ4つの関係ガイドだけをインデックス対象にしています。

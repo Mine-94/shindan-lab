@@ -73,6 +73,7 @@ async function main() {
     assert(home.text.includes('しんだんラボについて'), 'Home explanation is missing');
     assert(home.text.includes('目的から診断を選ぶ'), 'Home guide is missing');
     assert(home.text.includes('16タイプ・MBTI関連'), 'Home 16-type section is missing');
+    assert(home.text.includes('関係から相性を探す'), 'Home relation guide section is missing');
 
     const priorityIndex = home.text.indexOf('data-home-priority-version="2026-09-02"');
     const quizSectionIndex = home.text.indexOf('<h2 class="section-title">タイプ診断</h2>');
@@ -160,6 +161,11 @@ async function main() {
     assert(type16Compatibility.text.includes('友達の相性目安'), 'Compatibility context is missing');
     assert(type16Compatibility.text.includes('noindex, follow'), 'Query result noindex is missing');
 
+    const loveGuide = await fetchText('/16type/love');
+    assert(loveGuide.response.status === 200, 'Love relation guide did not return 200');
+    assert(loveGuide.text.includes('16タイプ恋愛相性ガイド'), 'Love relation guide heading is missing');
+    assert(loveGuide.text.includes('name="relation" value="love"'), 'Love guide relation input is missing');
+
     for (const quiz of quizzes) {
       for (const resultKey of Object.keys(quiz.results)) {
         const result = await fetchText(`/q/${quiz.id}/r/${resultKey}?s=75`);
@@ -195,7 +201,7 @@ async function main() {
       'Editorial policy is missing from sitemap'
     );
     const urlCount = (sitemap.text.match(/<url>/g) || []).length;
-    assert(urlCount === 107, `Unexpected sitemap URL count: ${urlCount}`);
+    assert(urlCount === 111, `Unexpected sitemap URL count: ${urlCount}`);
 
     console.log(`PASS: ${quizzes.length} quizzes and all result pages passed quality checks.`);
     console.log('PASS: home, trust pages, 16-type pages, structured data, HTML and sitemap checks passed.');

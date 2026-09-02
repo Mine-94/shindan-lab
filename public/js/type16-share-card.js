@@ -310,6 +310,20 @@
     window.setTimeout(() => URL.revokeObjectURL(url), 1500);
   }
 
+  function attributedShareUrl(rawUrl, method) {
+    try {
+      const url = new URL(rawUrl, window.location.origin);
+      if (url.origin === window.location.origin) {
+        url.searchParams.set('utm_source', 'share_card');
+        url.searchParams.set('utm_medium', method);
+        url.searchParams.set('utm_campaign', 'organic_share');
+      }
+      return url.toString();
+    } catch (error) {
+      return rawUrl;
+    }
+  }
+
   function analyticsParams(payload, method) {
     return {
       share_kind: payload.kind,
@@ -347,10 +361,13 @@
 
       if (canShareFile) {
         try {
+          const sharedUrl = attributedShareUrl(payload.url, 'image_web_share');
           await navigator.share({
             files: [file],
             title: payload.title,
-            text: payload.shareText,
+            text: `${payload.shareText}
+${sharedUrl}`,
+            url: sharedUrl,
           });
           track('type16_share_card', analyticsParams(payload, 'web_share_file'));
           track('share_success', {
@@ -368,8 +385,25 @@
       }
 
       downloadBlob(blob, payload.filename);
+      const downloadUrl = attributedShareUrl(payload.url, 'download_png');
+      let copied = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(`${payload.shareText}
+${downloadUrl}`);
+          copied = true;
+        } catch (error) {
+          copied = false;
+        }
+      }
       track('type16_share_card', analyticsParams(payload, 'download_png'));
-      setStatus(panel, '画像を保存しました。Instagram・Threads・Xなどで使えます。', 'success');
+      setStatus(
+        panel,
+        copied
+          ? '画像を保存し、投稿用の文章とリンクもコピーしました。'
+          : '画像を保存しました。Instagram・Threads・Xなどで使えます。',
+        'success'
+      );
     } catch (error) {
       console.error(error);
       setStatus(panel, '画像を作成できませんでした。結果リンクをご利用ください。', 'error');

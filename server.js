@@ -13,6 +13,8 @@ const { createType16Renderers } = require('./views/type16-render');
 Object.assign(originalRender, createType16Renderers({ ...originalRender }));
 const { createType16ShareRenderers } = require('./views/type16-share-render');
 Object.assign(originalRender, createType16ShareRenderers({ ...originalRender }));
+const { createGrowthRenderers } = require('./views/growth-render');
+Object.assign(originalRender, createGrowthRenderers({ ...originalRender }));
 const {
   renderHome,
   renderQuizPage,
@@ -27,6 +29,7 @@ const {
   renderType16Test,
   renderType16Result,
   renderType16Compatibility,
+  renderType16RelationGuide,
   SITE_URL,
 } = originalRender;
 
@@ -77,6 +80,10 @@ app.get('/sitemap.xml', (req, res) => {
     '/16type',
     '/16type/test',
     '/16type/compatibility',
+    '/16type/love',
+    '/16type/friend',
+    '/16type/work',
+    '/16type/family',
     ...TYPE16_CODES.map((code) => `/16type/r/${code}`),
     '/about.html',
     '/editorial-policy.html',
@@ -140,7 +147,23 @@ app.get('/16type', (req, res) => {
 });
 
 app.get('/16type/test', (req, res) => {
-  res.send(renderType16Test());
+  res.send(renderType16Test(req.query));
+});
+
+app.get('/16type/love', (req, res) => {
+  res.send(renderType16RelationGuide('love'));
+});
+
+app.get('/16type/friend', (req, res) => {
+  res.send(renderType16RelationGuide('friend'));
+});
+
+app.get('/16type/work', (req, res) => {
+  res.send(renderType16RelationGuide('work'));
+});
+
+app.get('/16type/family', (req, res) => {
+  res.send(renderType16RelationGuide('family'));
 });
 
 app.get('/16type/r/:code', (req, res) => {

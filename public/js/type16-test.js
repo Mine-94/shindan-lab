@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const data = window.__TYPE16_TEST__;
   const root = document.querySelector('[data-type16-test]');
+  const compareContext = window.__TYPE16_COMPARE__ || {};
   if (!data || !root || !Array.isArray(data.questions)) return;
 
   const intro = document.getElementById('type16-intro');
@@ -109,6 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
       t: String(result.t),
       j: String(result.j),
     });
+    if (compareContext.compare) params.set('compare', compareContext.compare);
+    if (compareContext.relation) params.set('relation', compareContext.relation);
     const destination = `${data.resultBase}${encodeURIComponent(result.code)}?${params.toString()}`;
     redirecting = true;
     options.querySelectorAll('button').forEach((button) => {

@@ -1,0 +1,79 @@
+name: Enable Japanese social preview images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enable-social-previews.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-test-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Install image generator and Japanese font
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-noto-cjk
+
+      - name: Generate six 1200x630 social preview PNGs
+        run: python3 scripts/generate_social_previews.py
+
+      - name: Enable Open Graph and Twitter image metadata
+        run: python3 scripts/enable_social_previews.py
+
+      - name: Validate source syntax
+        run: |
+          python3 -m py_compile scripts/generate_social_previews.py scripts/enable_social_previews.py
+          node --check views/render.js
+          node --check views/type16-render.js
+          node --check views/growth-render.js
+          node --check scripts/test-social-previews.js
+          node --check server.js
+
+      - name: Validate generated preview files and page metadata
+        run: node scripts/test-social-previews.js
+
+      - name: Validate acquisition loop
+        run: node scripts/test-growth.js
+
+      - name: Validate type and compatibility share cards
+        run: node scripts/test-type16-share.js
+
+      - name: Run all packaged tests
+        run: npm test
+
+      - name: Commit only tested metadata and generated PNGs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            public/og/default.png \
+            public/og/16type.png \
+            public/og/love.png \
+            public/og/friend.png \
+            public/og/work.png \
+            public/og/family.png \
+            views/render.js \
+            views/type16-render.js \
+            views/growth-render.js \
+            package.json
+          if git diff --cached --quiet; then
+            echo "Social preview assets are already current."
+            exit 0
+          fi
+          git commit -m "Add Japanese Open Graph preview images"
+          git push origin main

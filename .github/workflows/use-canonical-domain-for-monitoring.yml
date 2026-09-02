@@ -1,0 +1,57 @@
+name: Align Japanese monitoring with canonical domain
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/use-canonical-domain-for-monitoring.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Replace the legacy Render hostname with shindan24.com
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/japan_trend_watch.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'https://shindan-lab.onrender.com'
+          new = 'https://shindan24.com'
+          count = text.count(old)
+          if count != 2:
+              raise SystemExit(f'Expected two legacy hostname references, found {count}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+
+      - name: Validate the monitor
+        run: |
+          python3 -m py_compile scripts/japan_trend_watch.py
+          grep -q 'SITE_URL = "https://shindan24.com"' scripts/japan_trend_watch.py
+          if grep -q 'shindan-lab.onrender.com' scripts/japan_trend_watch.py; then
+            echo 'Legacy hostname remains in monitoring script.'
+            exit 1
+          fi
+
+      - name: Commit the tested monitoring update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/japan_trend_watch.py
+          if git diff --cached --quiet; then
+            echo 'Monitoring already uses the canonical domain.'
+            exit 0
+          fi
+          git commit -m "Monitor the canonical shindan24.com domain"
+          git push origin main

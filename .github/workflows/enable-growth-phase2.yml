@@ -1,0 +1,85 @@
+name: Enable Japanese SEO and invitation growth loop
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enable-growth-phase2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build relation guides and invitation loop
+        run: python3 scripts/build_growth_phase2.py
+
+      - name: Validate generated source syntax
+        run: |
+          python3 -m py_compile scripts/build_growth_phase2.py
+          node --check views/growth-render.js
+          node --check public/js/growth.js
+          node --check public/js/result-share.js
+          node --check public/js/type16-test.js
+          node --check public/js/type16-share-card.js
+          node --check scripts/test-growth.js
+          node --check scripts/test-quality.js
+          node --check server.js
+
+      - name: Validate SEO landing and invitation acquisition loop
+        run: node scripts/test-growth.js
+
+      - name: Validate existing 16-type share cards
+        run: node scripts/test-type16-share.js
+
+      - name: Validate existing homepage priority model
+        run: node scripts/test-home-priority.js
+
+      - name: Validate all 16 types and compatibility contexts
+        run: node scripts/test-type16.js
+
+      - name: Run the full regression suite
+        run: bash run_tests.sh
+
+      - name: Run the full page integration suite
+        run: node scripts/test-quality.js
+
+      - name: Validate the packaged test command
+        run: npm test
+
+      - name: Commit only fully tested application changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            server.js \
+            views/growth-render.js \
+            public/js/growth.js \
+            public/css/growth.css \
+            public/js/result-share.js \
+            public/js/type16-test.js \
+            public/js/type16-share-card.js \
+            scripts/test-growth.js \
+            scripts/test-quality.js \
+            run_tests.sh \
+            package.json \
+            README.md \
+            docs/japan-seo-daily-log.md
+          if git diff --cached --quiet; then
+            echo "No application changes were needed."
+            exit 0
+          fi
+          git commit -m "Add Japanese relation SEO pages and invitation loop"
+          git push origin main

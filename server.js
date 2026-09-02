@@ -1,3 +1,4 @@
+// Release marker: Japanese acquisition loop 2026-09-02-v2
 const express = require('express');
 const path = require('path');
 const rateLimit = require('express-rate-limit');

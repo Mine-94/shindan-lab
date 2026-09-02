@@ -1,80 +1,34 @@
-name: Submit updated Japanese pages to IndexNow
+name: Submit reviewed Japanese pages to IndexNow
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - views/**
-      - data/**
-      - public/**
-      - server*.js
-      - package*.json
-      - .github/workflows/indexnow.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: shindan-lab-indexnow
-  cancel-in-progress: true
-
 jobs:
   submit:
     runs-on: ubuntu-latest
+    env:
+      SITE_URL: https://shindan24.com
+      INDEXNOW_KEY: c43e252ab66ef069ad3bbb37b081739d
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Wait for the canonical 111-page sitemap and IndexNow key
-        env:
-          SITE_URL: https://shindan24.com
-          INDEXNOW_KEY: c43e252ab66ef069ad3bbb37b081739d
+      - name: Read the deployed reviewed sitemap
         run: |
-          ready=0
-          for attempt in $(seq 1 30); do
-            key_ok=0
-            sitemap_ok=0
-
-            if curl -fsS --max-time 30 "$SITE_URL/$INDEXNOW_KEY.txt" | grep -qx "$INDEXNOW_KEY"; then
-              key_ok=1
-            fi
-
-            if curl -fsS --max-time 45 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml; then
-              url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
-              if [ "$url_count" = '111' ] \
-                && grep -q "$SITE_URL/about.html</loc>" /tmp/sitemap.xml \
-                && grep -q "$SITE_URL/editorial-policy.html</loc>" /tmp/sitemap.xml \
-                && grep -q "$SITE_URL/16type/test</loc>" /tmp/sitemap.xml \
-                && grep -q "$SITE_URL/16type/r/ENFP</loc>" /tmp/sitemap.xml \
-                && grep -q "$SITE_URL/16type/love</loc>" /tmp/sitemap.xml \
-                && grep -q "$SITE_URL/16type/friend</loc>" /tmp/sitemap.xml \
-                && grep -q "$SITE_URL/16type/work</loc>" /tmp/sitemap.xml \
-                && grep -q "$SITE_URL/16type/family</loc>" /tmp/sitemap.xml; then
-                sitemap_ok=1
-              fi
-            fi
-
-            if [ "$key_ok" -eq 1 ] && [ "$sitemap_ok" -eq 1 ]; then
-              ready=1
-              break
-            fi
-            sleep 10
-          done
-
-          if [ "$ready" -ne 1 ]; then
-            echo "The canonical 111-page sitemap or IndexNow key could not be confirmed."
+          set -euo pipefail
+          curl -fsS --retry 5 --retry-delay 5 --max-time 60 "$SITE_URL/$INDEXNOW_KEY.txt" | grep -qx "$INDEXNOW_KEY"
+          curl -fsS --retry 5 --retry-delay 5 --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
+          url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
+          [ "$url_count" = '60' ]
+          grep -q "$SITE_URL/contact.html</loc>" /tmp/sitemap.xml
+          if grep -q '/meimei/r/' /tmp/sitemap.xml; then
+            echo 'Thin name-result URLs remain in the deployed sitemap.'
             exit 1
           fi
-          echo "Verified the shindan24.com IndexNow key and all 111 sitemap URLs."
 
-      - name: Build URL list from the canonical sitemap
-        env:
-          SITE_URL: https://shindan24.com
-          INDEXNOW_KEY: c43e252ab66ef069ad3bbb37b081739d
+      - name: Build IndexNow payload
         run: |
-          python - <<'PY'
+          python3 - <<'PY'
           import json
           import os
           import xml.etree.ElementTree as ET
@@ -86,28 +40,11 @@ jobs:
           for element in root.iter():
               if element.tag.endswith('loc') and element.text:
                   value = element.text.strip()
-                  if value.startswith(f'{site_url}/') or value == site_url:
+                  if value == site_url or value.startswith(f'{site_url}/'):
                       urls.append(value)
-
           urls = list(dict.fromkeys(urls))
-          if len(urls) != 111:
-              raise SystemExit(f'Expected 111 canonical URLs, found {len(urls)}.')
-
-          required = {
-              f'{site_url}/',
-              f'{site_url}/about.html',
-              f'{site_url}/editorial-policy.html',
-              f'{site_url}/16type/test',
-              f'{site_url}/16type/r/ENFP',
-              f'{site_url}/16type/love',
-              f'{site_url}/16type/friend',
-              f'{site_url}/16type/work',
-              f'{site_url}/16type/family',
-          }
-          missing = sorted(required.difference(urls))
-          if missing:
-              raise SystemExit(f'Required URLs missing from sitemap: {missing}')
-
+          if len(urls) != 60:
+              raise SystemExit(f'Expected 60 reviewed URLs, found {len(urls)}')
           payload = {
               'host': 'shindan24.com',
               'key': key,
@@ -116,20 +53,18 @@ jobs:
           }
           with open('/tmp/indexnow.json', 'w', encoding='utf-8') as handle:
               json.dump(payload, handle, ensure_ascii=False)
-          print(f'Prepared {len(urls)} canonical URLs for IndexNow.')
           PY
 
-      - name: Submit canonical URLs to IndexNow
+      - name: Submit the reviewed URLs
         run: |
-          status=$(curl -sS --max-time 60 \
-            -o /tmp/indexnow-response.txt \
-            -w '%{http_code}' \
+          set -euo pipefail
+          status=$(curl -sS --max-time 60 -o /tmp/indexnow-response.txt -w '%{http_code}' \
             -H 'Content-Type: application/json; charset=utf-8' \
             --data-binary @/tmp/indexnow.json \
             https://api.indexnow.org/indexnow)
           cat /tmp/indexnow-response.txt || true
-          if [ "$status" != "200" ] && [ "$status" != "202" ]; then
+          if [ "$status" != '200' ] && [ "$status" != '202' ]; then
             echo "IndexNow returned HTTP $status"
             exit 1
           fi
-          echo "IndexNow accepted all 111 shindan24.com URLs with HTTP $status."
+          echo "IndexNow accepted 60 reviewed shindan24.com URLs with HTTP $status."

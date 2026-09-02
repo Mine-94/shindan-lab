@@ -1,0 +1,45 @@
+name: Diagnose live Japanese growth revision
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/diagnose-live-growth.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: https://shindan-lab.onrender.com
+    steps:
+      - name: Inspect current live revision
+        run: |
+          set -u
+          for path in / /growth-release-2026-09-02.txt /16type/love /sitemap.xml; do
+            safe=$(printf '%s' "$path" | tr '/?' '__')
+            echo "===== $path ====="
+            status=$(curl -sS -L --max-time 60 -D "/tmp/${safe}.headers" -o "/tmp/${safe}.body" -w '%{http_code}' "$SITE_URL$path" || true)
+            echo "HTTP $status"
+            sed -n '1,20p' "/tmp/${safe}.headers" || true
+            echo "bytes=$(wc -c < "/tmp/${safe}.body" 2>/dev/null || echo 0)"
+            case "$path" in
+              /)
+                grep -Eo 'data-home-priority-version="[^"]+"|data-growth-version="[^"]+"|関係から相性を探す' "/tmp/${safe}.body" | head -n 20 || true
+                ;;
+              /growth-release-2026-09-02.txt)
+                cat "/tmp/${safe}.body" || true
+                ;;
+              /16type/love)
+                grep -Eo 'data-relation-guide="[^"]+"|16タイプ恋愛相性ガイド|<title>[^<]+' "/tmp/${safe}.body" | head -n 20 || true
+                ;;
+              /sitemap.xml)
+                echo "url_count=$(grep -o '<url>' "/tmp/${safe}.body" | wc -l | tr -d ' ')"
+                grep -Eo '/16type/(love|friend|work|family)</loc>' "/tmp/${safe}.body" || true
+                ;;
+            esac
+          done

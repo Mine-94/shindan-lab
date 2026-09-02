@@ -1,6 +1,6 @@
 name: Enable Japanese social preview images
 
-# Revision 2: match the current static 16-type canonical URLs.
+# Revision 3: validate current anchors and generated metadata.
 on:
   push:
     branches:

@@ -1,15 +1,6 @@
-name: Verify Japanese quality update on live Render site
+name: Verify AdSense-ready shindan24.com release
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - server.js
-      - views/**
-      - data/**
-      - public/**
-      - package*.json
   workflow_dispatch:
 
 permissions:
@@ -18,118 +9,41 @@ permissions:
 jobs:
   verify-live:
     runs-on: ubuntu-latest
+    env:
+      SITE_URL: https://shindan24.com
     steps:
-      - name: Wait for the new Render deployment
+      - name: Verify live trust pages, index controls and 404 handling
         run: |
-          ready=0
-          for attempt in $(seq 1 30); do
-            curl -fsS --max-time 45 https://shindan-lab.onrender.com/ -o /tmp/home.html || true
-            curl -fsS --max-time 45 https://shindan-lab.onrender.com/16type/love -o /tmp/love.html || true
-            curl -fsS --max-time 45 'https://shindan-lab.onrender.com/16type/r/ENFP?e=80&s=20&t=20&j=20' -o /tmp/type16-result.html || true
-            curl -fsS --max-time 45 https://shindan-lab.onrender.com/sitemap.xml -o /tmp/sitemap.xml || true
-            if grep -q 'data-growth-version="2026-09-02-v2"' /tmp/home.html 2>/dev/null \
-              && grep -q 'data-relation-guide="love"' /tmp/love.html 2>/dev/null \
-              && grep -q 'data-type16-invite-relation="friend"' /tmp/type16-result.html 2>/dev/null \
-              && grep -q '/16type/love</loc>' /tmp/sitemap.xml 2>/dev/null \
-              && [ "$(grep -o '<url>' /tmp/sitemap.xml 2>/dev/null | wc -l | tr -d ' ')" = '111' ]; then
-              ready=1
-              break
-            fi
-            sleep 10
-          done
-          if [ "$ready" -ne 1 ]; then
-            echo 'The Japanese acquisition-loop deployment was not visible on the live site.'
+          set -euo pipefail
+          curl -fsS --max-time 60 "$SITE_URL/" -o /tmp/home.html
+          curl -fsS --max-time 60 "$SITE_URL/about.html" -o /tmp/about.html
+          curl -fsS --max-time 60 "$SITE_URL/editorial-policy.html" -o /tmp/policy.html
+          curl -fsS --max-time 60 "$SITE_URL/contact.html" -o /tmp/contact.html
+          curl -fsS --max-time 60 "$SITE_URL/privacy.html" -o /tmp/privacy.html
+          curl -fsS --max-time 60 "$SITE_URL/terms.html" -o /tmp/terms.html
+          curl -fsS --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
+          curl -fsSI --max-time 60 "$SITE_URL/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A" -o /tmp/name-headers.txt
+          status=$(curl -sS --max-time 60 -o /tmp/404.html -w '%{http_code}' "$SITE_URL/adsense-readiness-missing-page")
+
+          grep -q '運営・編集：しんだんラボ編集部' /tmp/home.html
+          grep -q '運営者情報' /tmp/about.html
+          grep -q '広告と編集の分離' /tmp/policy.html
+          grep -q 'contact@shindan24.com' /tmp/contact.html
+          grep -q '第三者配信事業者' /tmp/privacy.html
+          grep -q '禁止事項' /tmp/terms.html
+          grep -qi '^x-robots-tag:.*noindex' /tmp/name-headers.txt
+          [ "$status" = '404' ]
+          grep -q 'ページが見つかりません' /tmp/404.html
+
+          url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
+          [ "$url_count" = '60' ]
+          grep -q "$SITE_URL/contact.html</loc>" /tmp/sitemap.xml
+          if grep -q '/meimei/r/' /tmp/sitemap.xml; then
+            echo 'Thin name-result URLs remain in sitemap.'
             exit 1
           fi
-
-      - name: Verify live growth pages, invite loop, share cards and sitemap
-        run: |
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/ -o /tmp/home.html
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/q/oshikatsu-type -o /tmp/quiz.html
-          curl -fsS --max-time 45 'https://shindan-lab.onrender.com/q/oshikatsu-type/r/kamiseki?s=75' -o /tmp/result.html
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/about.html -o /tmp/about.html
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/editorial-policy.html -o /tmp/policy.html
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/sitemap.xml -o /tmp/sitemap.xml
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/16type -o /tmp/type16.html
-          curl -fsS --max-time 45 'https://shindan-lab.onrender.com/16type/test?compare=ENFP&relation=friend&utm_source=invite' -o /tmp/type16-test.html
-          curl -fsS --max-time 45 'https://shindan-lab.onrender.com/16type/r/ISFJ?compare=ENFP&relation=friend' -o /tmp/type16-result.html
-          curl -fsS --max-time 45 'https://shindan-lab.onrender.com/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend' -o /tmp/type16-compat.html
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/16type/love -o /tmp/love.html
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/16type/friend -o /tmp/friend.html
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/16type/work -o /tmp/work.html
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/16type/family -o /tmp/family.html
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/js/growth.js -o /tmp/growth.js
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/js/type16-test.js -o /tmp/type16-test.js
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/js/type16-share-card.js -o /tmp/type16-share-card.js
-          curl -fsS --max-time 45 https://shindan-lab.onrender.com/css/growth.css -o /tmp/growth.css
-
-          grep -q 'しんだんラボについて' /tmp/home.html
-          grep -q '16タイプ・MBTI関連を中心に、今おすすめの診断' /tmp/home.html
-          grep -q '関係から相性を探す' /tmp/home.html
-          grep -q 'data-growth-version="2026-09-02-v2"' /tmp/home.html
-          grep -q '/js/growth.js' /tmp/home.html
-          grep -q '現場へ動く行動力' /tmp/quiz.html
-          grep -q '今日からできること' /tmp/result.html
-          grep -q '結果の限界を隠しません' /tmp/about.html
-          grep -q '他サイトの文章をコピーしません' /tmp/policy.html
-          grep -q '16タイプ性格一覧' /tmp/type16.html
-          grep -q '公式MBTI®ではありません' /tmp/type16.html
-          grep -q 'ENFPの友達から届いた比較リンク' /tmp/type16-test.html
-          grep -q 'data-type16-invite-relation="friend"' /tmp/type16-result.html
-          grep -q 'data-type16-invite-relation="love"' /tmp/type16-result.html
-          grep -q 'ENFPとの友達相性を見る' /tmp/type16-result.html
-          grep -q 'data-comparison-ready="true"' /tmp/type16-result.html
-          grep -q 'data-type16-share-kind="type"' /tmp/type16-result.html
-          grep -q '友達の相性目安' /tmp/type16-compat.html
-          grep -q 'noindex, follow' /tmp/type16-compat.html
-          grep -q '恋愛相性ガイド' /tmp/type16-compat.html
-          grep -q 'data-type16-share-kind="compatibility"' /tmp/type16-compat.html
-          grep -q '16タイプ恋愛相性ガイド' /tmp/love.html
-          grep -q 'data-relation-guide="love"' /tmp/love.html
-          grep -q 'name="relation" value="love"' /tmp/love.html
-          grep -q '16タイプ友達相性ガイド' /tmp/friend.html
-          grep -q 'name="relation" value="friend"' /tmp/friend.html
-          grep -q '16タイプ仕事相性ガイド' /tmp/work.html
-          grep -q 'name="relation" value="work"' /tmp/work.html
-          grep -q '16タイプ家族相性ガイド' /tmp/family.html
-          grep -q 'name="relation" value="family"' /tmp/family.html
-          grep -q 'type16_invite_share' /tmp/growth.js
-          grep -q 'share_landing' /tmp/growth.js
-          grep -q 'relation_guide_submit' /tmp/growth.js
-          grep -q "params.set('compare'" /tmp/type16-test.js
-          grep -q 'attributedShareUrl' /tmp/type16-share-card.js
-          grep -q '/16type/love</loc>' /tmp/sitemap.xml
-          grep -q '/16type/friend</loc>' /tmp/sitemap.xml
-          grep -q '/16type/work</loc>' /tmp/sitemap.xml
-          grep -q '/16type/family</loc>' /tmp/sitemap.xml
-
-          python3 - <<'PY'
-          from pathlib import Path
-
-          home = Path('/tmp/home.html').read_text(encoding='utf-8')
-          quiz = Path('/tmp/quiz.html').read_text(encoding='utf-8')
-          sitemap = Path('/tmp/sitemap.xml').read_text(encoding='utf-8')
-          type16 = Path('/tmp/type16.html').read_text(encoding='utf-8')
-          type_result = Path('/tmp/type16-result.html').read_text(encoding='utf-8')
-          type_compat = Path('/tmp/type16-compat.html').read_text(encoding='utf-8')
-
-          priority = home.index('data-home-priority-version="2026-09-02"')
-          growth = home.index('data-growth-version="2026-09-02-v2"')
-          quiz_section = home.index('<h2 class="section-title">タイプ診断</h2>')
-          fortune_section = home.index('<h2 class="section-title">占い</h2>')
-          assert priority < growth < quiz_section < fortune_section
-
-          assert type_result.count('data-type16-share-kind="type"') == 1
-          assert type_result.count('data-type16-invite-relation="friend"') == 1
-          assert type_result.count('data-type16-invite-relation="love"') == 1
-          assert type_result.count('/js/growth.js') == 1
-          assert type_compat.count('data-type16-share-kind="compatibility"') == 1
-          assert type_compat.count('/js/growth.js') == 1
-
-          assert '\nmain>' not in home
-          assert '\nmain>' not in quiz
-          assert sitemap.count('<url>') == 111
-          assert '"@type":"FAQPage"' in home
-          assert '"@type":"FAQPage"' in type16
-          print('LIVE PASS: Japanese SEO relation guides, invite loop, share cards and 111 sitemap URLs verified.')
-          PY
+          if grep -R -q 'shindan-lab.onrender.com' /tmp/about.html /tmp/policy.html /tmp/contact.html /tmp/privacy.html /tmp/terms.html /tmp/sitemap.xml; then
+            echo 'Legacy hostname remains in live trust or sitemap content.'
+            exit 1
+          fi
+          echo 'LIVE PASS: trust pages, privacy disclosure, 60 reviewed URLs, noindexed name results and real 404 verified.'

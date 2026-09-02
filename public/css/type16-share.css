@@ -1,0 +1,278 @@
+/* しんだんラボ — 16タイプ結果・相性の共有カード */
+
+.type16-share-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 340px);
+  align-items: center;
+  gap: 28px;
+  margin: 24px 0;
+  padding: 24px;
+  border: 1px solid #e5dff0;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(51, 42, 72, 0.07);
+}
+
+.type16-share-panel.is-compatibility {
+  margin: 28px 0 22px;
+  border-color: #efdce5;
+}
+
+.type16-share-copy {
+  align-self: end;
+}
+
+.type16-share-copy h2 {
+  margin: 3px 0 10px;
+  font-size: 1.3rem;
+}
+
+.type16-share-copy > p:last-child {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.type16-share-preview {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  display: flex;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  max-width: 340px;
+  min-height: 0;
+  justify-self: center;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 22px 20px 18px;
+  border-radius: 22px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 16px 34px rgba(46, 35, 77, 0.2);
+}
+
+.type16-share-preview.is-type {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.17), transparent 30%),
+    linear-gradient(145deg, #6f5cd7, #352d67);
+}
+
+.type16-share-preview.is-compatibility {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.2), transparent 30%),
+    linear-gradient(145deg, #e26d8a, #a45e9e 55%, #564078);
+}
+
+.type16-share-preview-topline {
+  width: 100%;
+  margin-bottom: auto;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0.86;
+}
+
+.type16-share-preview-emoji {
+  margin: 5px 0 0;
+  font-size: 2.3rem;
+}
+
+.type16-share-preview-code {
+  margin-top: 3px;
+  font-size: 2.65rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.type16-share-preview h3 {
+  margin: 10px 0 4px;
+  color: inherit;
+  font-size: 1rem;
+}
+
+.type16-share-preview > p {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.55;
+  opacity: 0.92;
+}
+
+.type16-share-preview > small {
+  margin-top: auto;
+  font-size: 0.55rem;
+  opacity: 0.8;
+}
+
+.type16-share-preview-axes {
+  width: 100%;
+  margin: 14px 0 12px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.type16-share-axis {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.57rem;
+  font-weight: 700;
+}
+
+.type16-share-axis + .type16-share-axis {
+  margin-top: 7px;
+}
+
+.type16-share-axis i {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.type16-share-preview-note {
+  margin: 0 !important;
+  font-size: 0.62rem !important;
+}
+
+.type16-share-preview-relation {
+  margin-top: 8px !important;
+  font-weight: 800;
+}
+
+.type16-share-preview-pair {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 13px;
+}
+
+.type16-share-preview-pair > div {
+  display: grid;
+  gap: 2px;
+}
+
+.type16-share-preview-pair span {
+  font-size: 1.65rem;
+}
+
+.type16-share-preview-pair strong {
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+}
+
+.type16-share-preview-pair small {
+  font-size: 0.55rem;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+.type16-share-preview-pair b {
+  font-size: 1.3rem;
+  opacity: 0.78;
+}
+
+.type16-share-preview-score {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  margin: 15px 0 2px;
+}
+
+.type16-share-preview-score strong {
+  font-size: 2.65rem;
+  line-height: 1;
+}
+
+.type16-share-preview-score span {
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.type16-share-preview.is-compatibility h3 {
+  margin-top: 11px;
+  font-size: 0.72rem;
+}
+
+.type16-share-preview.is-compatibility > p:not(.type16-share-preview-relation) {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.type16-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.type16-share-actions .quiz-btn {
+  margin: 0;
+}
+
+.type16-share-status {
+  min-height: 1.5em;
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.type16-share-status[data-state='success'] {
+  color: #387250;
+}
+
+.type16-share-status[data-state='error'] {
+  color: #a63f51;
+}
+
+.type16-share-status[data-state='neutral'] {
+  color: #6c6574;
+}
+
+@media (max-width: 720px) {
+  .type16-share-panel {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 20px;
+  }
+
+  .type16-share-preview {
+    grid-column: 1;
+    grid-row: auto;
+    width: min(100%, 320px);
+  }
+
+  .type16-share-copy {
+    text-align: center;
+  }
+
+  .type16-share-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 420px) {
+  .type16-share-panel {
+    padding: 17px;
+  }
+
+  .type16-share-preview {
+    max-width: 290px;
+    padding: 18px 16px 15px;
+  }
+
+  .type16-share-actions {
+    display: grid;
+  }
+
+  .type16-share-actions .quiz-btn {
+    width: 100%;
+  }
+}

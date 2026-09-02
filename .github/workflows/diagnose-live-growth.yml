@@ -17,65 +17,85 @@ jobs:
     env:
       SITE_URL: https://shindan24.com
     steps:
-      - name: Inspect current live AdSense revision without masking the result
+      - name: Wait until the content-depth release is live
         run: |
           set -u
-          paths=(
-            "/"
-            "/about.html"
-            "/contact.html"
-            "/privacy.html"
-            "/sitemap.xml"
-            "/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A"
-            "/adsense-readiness-missing-page"
-          )
+          ready=0
+          for attempt in $(seq 1 36); do
+            curl -fsS --max-time 60 "$SITE_URL/" -o /tmp/home.html || true
+            curl -fsS --max-time 60 "$SITE_URL/q/oshikatsu-type" -o /tmp/quiz.html || true
+            curl -fsS --max-time 60 "$SITE_URL/shichuu/r/kinoe" -o /tmp/stem.html || true
+            curl -fsS --max-time 60 "$SITE_URL/ketsueki/r/A" -o /tmp/blood.html || true
+            curl -fsS --max-time 60 "$SITE_URL/meimei" -o /tmp/meimei.html || true
 
-          for request_path in "${paths[@]}"; do
-            safe=$(printf '%s' "$request_path" | tr '/?%&=' '______')
-            echo "===== $request_path ====="
-            status=$(curl -sS --max-time 60 -D "/tmp/${safe}.headers" -o "/tmp/${safe}.body" -w '%{http_code}' "$SITE_URL$request_path" || true)
-            echo "HTTP $status"
-            grep -Ei '^(location|x-robots-tag|content-type):' "/tmp/${safe}.headers" || true
-            echo "bytes=$(wc -c < "/tmp/${safe}.body" 2>/dev/null || echo 0)"
-
-            case "$request_path" in
-              /)
-                grep -Eo '運営・編集：しんだんラボ編集部|href="/contact.html"' "/tmp/${safe}.body" | head -n 10 || true
-                ;;
-              /about.html)
-                grep -Eo '運営者情報|しんだんラボ編集部|shindan-lab.onrender.com' "/tmp/${safe}.body" | head -n 10 || true
-                ;;
-              /contact.html)
-                grep -Eo 'contact@shindan24.com|site-contact.yml|お問い合わせ' "/tmp/${safe}.body" | head -n 20 || true
-                ;;
-              /privacy.html)
-                grep -Eo '第三者配信事業者|ウェブビーコン|Google広告設定' "/tmp/${safe}.body" | head -n 10 || true
-                ;;
-              /sitemap.xml)
-                echo "url_count=$(grep -o '<url>' "/tmp/${safe}.body" | wc -l | tr -d ' ')"
-                grep -Eo '/contact.html</loc>|/meimei/r/' "/tmp/${safe}.body" | head -n 10 || true
-                ;;
-              /adsense-readiness-missing-page)
-                grep -Eo 'ページが見つかりません' "/tmp/${safe}.body" | head -n 5 || true
-                ;;
-            esac
+            if grep -q 'data-content-depth="home-h1"' /tmp/home.html 2>/dev/null \
+              && grep -q 'data-content-depth="quiz-oshikatsu-type"' /tmp/quiz.html 2>/dev/null \
+              && grep -q 'data-content-depth="stem-kinoe"' /tmp/stem.html 2>/dev/null \
+              && grep -q 'data-content-depth="blood-A"' /tmp/blood.html 2>/dev/null \
+              && grep -q 'data-content-depth="meimei-guide"' /tmp/meimei.html 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 10
           done
 
-          echo "===== shindan24.com MX ====="
-          curl -fsS --max-time 30 'https://dns.google/resolve?name=shindan24.com&type=MX' -o /tmp/mx.json || true
+          if [ "$ready" -ne 1 ]; then
+            echo 'The AdSense content-depth release was not visible on shindan24.com.'
+            exit 1
+          fi
+          echo 'The AdSense content-depth release is visible.'
+
+      - name: Verify live trust, depth, index controls and contact routing
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 60 "$SITE_URL/" -o /tmp/home.html
+          curl -fsS --max-time 60 "$SITE_URL/q/oshikatsu-type" -o /tmp/quiz.html
+          curl -fsS --max-time 60 "$SITE_URL/shichuu/r/kinoe" -o /tmp/stem.html
+          curl -fsS --max-time 60 "$SITE_URL/ketsueki/r/A" -o /tmp/blood.html
+          curl -fsS --max-time 60 "$SITE_URL/ketsueki" -o /tmp/ketsueki.html
+          curl -fsS --max-time 60 "$SITE_URL/meimei" -o /tmp/meimei.html
+          curl -fsS --max-time 60 "$SITE_URL/about.html" -o /tmp/about.html
+          curl -fsS --max-time 60 "$SITE_URL/contact.html" -o /tmp/contact.html
+          curl -fsS --max-time 60 "$SITE_URL/privacy.html" -o /tmp/privacy.html
+          curl -fsS --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
+          curl -fsSI --max-time 60 "$SITE_URL/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A" -o /tmp/name-headers.txt
+          missing_status=$(curl -sS --max-time 60 -o /tmp/404.html -w '%{http_code}' "$SITE_URL/adsense-readiness-missing-page")
+
+          grep -q '<h1 class="home-main-title"' /tmp/home.html
+          grep -q '表示される結果' /tmp/quiz.html
+          grep -q '同じ五行の陰陽との違い' /tmp/stem.html
+          grep -q '疲れやすい場面と整え方' /tmp/blood.html
+          grep -q '血液型占いをどう使う？' /tmp/ketsueki.html
+          grep -q '入力した名前と結果URLについて' /tmp/meimei.html
+          grep -q '運営者情報' /tmp/about.html
+          grep -q 'contact@shindan24.com' /tmp/contact.html
+          grep -q '第三者配信事業者' /tmp/privacy.html
+          grep -qi '^x-robots-tag:.*noindex' /tmp/name-headers.txt
+          [ "$missing_status" = '404' ]
+          grep -q 'ページが見つかりません' /tmp/404.html
+
+          url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
+          [ "$url_count" = '60' ]
+          grep -q "$SITE_URL/contact.html</loc>" /tmp/sitemap.xml
+          if grep -q '/meimei/r/' /tmp/sitemap.xml; then
+            echo 'Thin name-result URLs remain in sitemap.'
+            exit 1
+          fi
+
+          for file in home quiz stem blood ketsueki meimei; do
+            grep -q '/css/adsense-content.css' "/tmp/$file.html"
+          done
+
+          curl -fsS --max-time 30 'https://dns.google/resolve?name=shindan24.com&type=MX' -o /tmp/mx.json
           python3 - <<'PY'
           import json
           from pathlib import Path
 
-          try:
-              data = json.loads(Path('/tmp/mx.json').read_text(encoding='utf-8'))
-          except Exception as exc:
-              print(f'MX lookup unavailable: {exc}')
-          else:
-              answers = [item.get('data', '') for item in data.get('Answer', [])]
-              print(f'DNS status={data.get("Status")}; MX answers={answers}')
-              if not answers:
-                  print('WARNING: no MX record is published; contact@shindan24.com should not be presented as a working mailbox yet.')
+          data = json.loads(Path('/tmp/mx.json').read_text(encoding='utf-8'))
+          answers = [item.get('data', '') for item in data.get('Answer', [])]
+          if not answers:
+              raise SystemExit('No MX records are published for shindan24.com')
+          print(f'MX PASS: {answers}')
           PY
 
-          echo "Diagnostic completed. Review the markers above; this job intentionally does not convert a stale deployment or missing MX into a code failure."
+          echo 'LIVE PASS: original content depth, trust pages, 60 reviewed URLs, noindexed name results, real 404 and MX routing verified.'

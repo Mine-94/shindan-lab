@@ -1,0 +1,89 @@
+name: Enable large image previews for Japanese search
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enable-large-image-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Add max-image-preview without weakening noindex pages
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              if new in text:
+                  return
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected one {label} anchor in {path}, found {count}')
+              file.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'views/render.js',
+              '<meta name="description" content="${escapeHtml(description)}" />\n<link rel="canonical"',
+              '<meta name="description" content="${escapeHtml(description)}" />\n<meta name="robots" content="max-image-preview:large" />\n<link rel="canonical"',
+              'base robots meta',
+          )
+          replace_once(
+              'views/type16-render.js',
+              '<meta name="robots" content="noindex, follow" />',
+              '<meta name="robots" content="noindex, follow, max-image-preview:large" />',
+              '16-type noindex meta',
+          )
+          replace_once(
+              'views/growth-render.js',
+              '<meta name="robots" content="noindex, follow" />',
+              '<meta name="robots" content="noindex, follow, max-image-preview:large" />',
+              'growth noindex meta',
+          )
+          PY
+
+      - name: Validate source syntax and metadata
+        run: |
+          node --check views/render.js
+          node --check views/type16-render.js
+          node --check views/growth-render.js
+          grep -q 'content="max-image-preview:large"' views/render.js
+          grep -q 'noindex, follow, max-image-preview:large' views/type16-render.js
+          grep -q 'noindex, follow, max-image-preview:large' views/growth-render.js
+
+      - name: Validate social previews and acquisition loop
+        run: |
+          node scripts/test-social-previews.js
+          node scripts/test-growth.js
+          node scripts/test-type16-share.js
+
+      - name: Run packaged tests
+        run: npm test
+
+      - name: Commit only the tested metadata changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add views/render.js views/type16-render.js views/growth-render.js
+          if git diff --cached --quiet; then
+            echo 'Large image preview metadata is already current.'
+            exit 0
+          fi
+          git commit -m "Enable large image previews for Japanese search"
+          git push origin main

@@ -1,4 +1,3 @@
-// Release marker: Japanese acquisition loop 2026-09-02-v2
 const express = require('express');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
@@ -37,6 +36,7 @@ const {
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADSENSE_PUBLISHER_ID = (process.env.ADSENSE_CLIENT_ID || 'ca-pub-8602848692420724').replace(/^ca-/, '');
+const LEGACY_HOST = 'shindan-lab.onrender.com';
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -45,6 +45,14 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use(limiter);
+
+// 検索シグナルがRenderの既定アドレスと公式ドメインに分かれないよう一本化します。
+app.use((req, res, next) => {
+  if (String(req.hostname || '').toLowerCase() === LEGACY_HOST) {
+    return res.redirect(301, `${SITE_URL}${req.originalUrl}`);
+  }
+  next();
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 

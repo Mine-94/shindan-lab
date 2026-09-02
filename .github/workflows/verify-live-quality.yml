@@ -25,9 +25,11 @@ jobs:
           ready=0
           for attempt in $(seq 1 30); do
             curl -fsS --max-time 45 https://shindan-lab.onrender.com/ -o /tmp/home.html || true
+            curl -fsS --max-time 45 'https://shindan-lab.onrender.com/16type/r/ENFP?e=80&s=20&t=20&j=20' -o /tmp/type16-result.html || true
             curl -fsS --max-time 45 https://shindan-lab.onrender.com/sitemap.xml -o /tmp/sitemap.xml || true
             if grep -q 'data-home-priority-version="2026-09-02"' /tmp/home.html 2>/dev/null \
-              && grep -q '/js/home-priority.js' /tmp/home.html 2>/dev/null \
+              && grep -q 'data-type16-share-version="2026-09-02"' /tmp/type16-result.html 2>/dev/null \
+              && grep -q '/js/type16-share-card.js' /tmp/type16-result.html 2>/dev/null \
               && grep -q '/16type/r/ENFP</loc>' /tmp/sitemap.xml 2>/dev/null \
               && [ "$(grep -o '<url>' /tmp/sitemap.xml 2>/dev/null | wc -l | tr -d ' ')" = '107' ]; then
               ready=1
@@ -36,11 +38,11 @@ jobs:
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'The data-priority homepage deployment was not visible on the live site.'
+            echo 'The 16-type share-card deployment was not visible on the live site.'
             exit 1
           fi
 
-      - name: Verify live homepage order, quizzes, 16-type pages, policies and sitemap
+      - name: Verify live homepage order, share cards, core pages and sitemap
         run: |
           curl -fsS --max-time 45 https://shindan-lab.onrender.com/ -o /tmp/home.html
           curl -fsS --max-time 45 https://shindan-lab.onrender.com/q/oshikatsu-type -o /tmp/quiz.html
@@ -52,6 +54,8 @@ jobs:
           curl -fsS --max-time 45 https://shindan-lab.onrender.com/16type/test -o /tmp/type16-test.html
           curl -fsS --max-time 45 'https://shindan-lab.onrender.com/16type/r/ENFP?e=80&s=20&t=20&j=20' -o /tmp/type16-result.html
           curl -fsS --max-time 45 'https://shindan-lab.onrender.com/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend' -o /tmp/type16-compat.html
+          curl -fsS --max-time 45 https://shindan-lab.onrender.com/js/type16-share-card.js -o /tmp/type16-share-card.js
+          curl -fsS --max-time 45 https://shindan-lab.onrender.com/css/type16-share.css -o /tmp/type16-share.css
 
           grep -q 'しんだんラボについて' /tmp/home.html
           grep -q '目的から診断を選ぶ' /tmp/home.html
@@ -69,8 +73,20 @@ jobs:
           grep -q 'window.__TYPE16_TEST__' /tmp/type16-test.html
           grep -q '今回の回答バランス' /tmp/type16-result.html
           grep -q '恋愛で出やすい傾向' /tmp/type16-result.html
+          grep -q 'data-type16-share-kind="type"' /tmp/type16-result.html
+          grep -q '結果を4:5画像でシェア' /tmp/type16-result.html
+          grep -q '1080×1350px' /tmp/type16-result.html
+          grep -q '/js/type16-share-card.js' /tmp/type16-result.html
+          grep -q '/css/type16-share.css' /tmp/type16-result.html
           grep -q '友達の相性目安' /tmp/type16-compat.html
           grep -q 'noindex, follow' /tmp/type16-compat.html
+          grep -q 'data-type16-share-kind="compatibility"' /tmp/type16-compat.html
+          grep -q '相性画像を作ってシェア' /tmp/type16-compat.html
+          grep -q '/js/type16-share-card.js' /tmp/type16-compat.html
+          grep -q 'const WIDTH = 1080;' /tmp/type16-share-card.js
+          grep -q 'const HEIGHT = 1350;' /tmp/type16-share-card.js
+          grep -q 'type16_share_card' /tmp/type16-share-card.js
+          grep -q 'aspect-ratio: 4 / 5' /tmp/type16-share.css
           grep -q '/editorial-policy.html</loc>' /tmp/sitemap.xml
           grep -q '/16type/test</loc>' /tmp/sitemap.xml
           grep -q '/16type/r/ENFP</loc>' /tmp/sitemap.xml
@@ -82,6 +98,8 @@ jobs:
           quiz = Path('/tmp/quiz.html').read_text(encoding='utf-8')
           sitemap = Path('/tmp/sitemap.xml').read_text(encoding='utf-8')
           type16 = Path('/tmp/type16.html').read_text(encoding='utf-8')
+          type_result = Path('/tmp/type16-result.html').read_text(encoding='utf-8')
+          type_compat = Path('/tmp/type16-compat.html').read_text(encoding='utf-8')
 
           priority = home.index('data-home-priority-version="2026-09-02"')
           quiz_section = home.index('<h2 class="section-title">タイプ診断</h2>')
@@ -104,10 +122,18 @@ jobs:
           assert fortune_html.index('href="/ketsueki"') < fortune_html.index('href="/shichuu"')
           assert fortune_html.index('href="/shichuu"') < fortune_html.index('href="/meimei"')
 
+          assert type_result.count('data-type16-share-kind="type"') == 1
+          assert type_result.count('/js/type16-share-card.js') == 1
+          assert type_result.count('/css/type16-share.css') == 1
+          assert type_result.count('id="copy-link-btn"') == 1
+          assert type_compat.count('data-type16-share-kind="compatibility"') == 1
+          assert type_compat.count('/js/type16-share-card.js') == 1
+          assert type_compat.count('id="copy-link-btn"') == 1
+
           assert '\nmain>' not in home
           assert '\nmain>' not in quiz
           assert sitemap.count('<url>') == 107
           assert '"@type":"FAQPage"' in home
           assert '"@type":"FAQPage"' in type16
-          print('LIVE PASS: data-driven homepage order, all core pages and 107 sitemap URLs verified.')
+          print('LIVE PASS: homepage order, 16-type share cards, core pages and 107 sitemap URLs verified.')
           PY

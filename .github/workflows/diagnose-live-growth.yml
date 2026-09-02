@@ -46,7 +46,7 @@ jobs:
                 grep -Eo '運営者情報|しんだんラボ編集部|shindan-lab.onrender.com' "/tmp/${safe}.body" | head -n 10 || true
                 ;;
               /contact.html)
-                grep -Eo 'contact@shindan24.com|site-contact.yml|お問い合わせ' "/tmp/${safe}.body" | head -n 10 || true
+                grep -Eo 'contact@shindan24.com|site-contact.yml|お問い合わせ' "/tmp/${safe}.body" | head -n 20 || true
                 ;;
               /privacy.html)
                 grep -Eo '第三者配信事業者|ウェブビーコン|Google広告設定' "/tmp/${safe}.body" | head -n 10 || true
@@ -61,4 +61,21 @@ jobs:
             esac
           done
 
-          echo "Diagnostic completed. Review the markers above; this job intentionally does not convert a stale deployment into a code failure."
+          echo "===== shindan24.com MX ====="
+          curl -fsS --max-time 30 'https://dns.google/resolve?name=shindan24.com&type=MX' -o /tmp/mx.json || true
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          try:
+              data = json.loads(Path('/tmp/mx.json').read_text(encoding='utf-8'))
+          except Exception as exc:
+              print(f'MX lookup unavailable: {exc}')
+          else:
+              answers = [item.get('data', '') for item in data.get('Answer', [])]
+              print(f'DNS status={data.get("Status")}; MX answers={answers}')
+              if not answers:
+                  print('WARNING: no MX record is published; contact@shindan24.com should not be presented as a working mailbox yet.')
+          PY
+
+          echo "Diagnostic completed. Review the markers above; this job intentionally does not convert a stale deployment or missing MX into a code failure."

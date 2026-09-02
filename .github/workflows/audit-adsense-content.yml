@@ -1,0 +1,28 @@
+name: Audit AdSense content depth
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/audit-adsense-content.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check audit syntax
+        run: node --check scripts/audit-adsense-content.js
+
+      - name: Audit all 60 indexable pages
+        run: node scripts/audit-adsense-content.js

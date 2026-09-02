@@ -53,6 +53,7 @@ function baseLayout({ title, description, ogUrl, ogImage, bodyClass, content, th
 <link rel="manifest" href="/manifest.json" />
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}" />
+<meta name="author" content="しんだんラボ編集部" />
 <meta name="robots" content="max-image-preview:large" />
 <link rel="canonical" href="${escapeHtml(ogUrl)}" />
 ${GOOGLE_SITE_VERIFICATION ? `<meta name="google-site-verification" content="${escapeHtml(GOOGLE_SITE_VERIFICATION)}" />` : ''}
@@ -87,8 +88,12 @@ ${content}
 <footer class="site-footer">
   <div class="container">
     <p class="disclaimer">当サイトの診断・占いコンテンツはエンタメ目的であり、公式の心理検査・医学的診断・専門家による鑑定の代わりになるものではありません。血液型と性格の関連性、姓名判断・四柱推命の的中性は科学的に証明されたものではありません。</p>
-    <nav class="footer-nav">
+    <p class="site-operator">運営・編集：しんだんラボ編集部｜<a href="/about.html">運営方針</a>｜<a href="/contact.html">お問い合わせ</a></p>
+    <nav class="footer-nav" aria-label="サイト情報">
       <a href="/">ホーム</a>
+      <a href="/about.html">しんだんラボについて</a>
+      <a href="/editorial-policy.html">編集・診断ポリシー</a>
+      <a href="/contact.html">お問い合わせ</a>
       <a href="/privacy.html">プライバシーポリシー</a>
       <a href="/terms.html">利用規約</a>
     </nav>
@@ -679,7 +684,7 @@ function renderMeimeiForm(errorMessage) {
       <div class="link-grid-items">
         ${MEIMEI_FEATURED.map(
           ({ sei, mei }) =>
-            `<a href="/meimei/r/${encodeURIComponent(sei)}/${encodeURIComponent(mei)}" class="link-grid-item">${escapeHtml(sei)} ${escapeHtml(mei)}</a>`
+            `<a href="/meimei/r/${encodeURIComponent(sei)}/${encodeURIComponent(mei)}" class="link-grid-item" rel="nofollow">${escapeHtml(sei)} ${escapeHtml(mei)}</a>`
         ).join('\n        ')}
       </div>
     </div>`;

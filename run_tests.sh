@@ -99,6 +99,9 @@ check_status "ads.txt" "$BASE/ads.txt" 200
 check_contains "ads.txt 販売者情報" "$BASE/ads.txt" "google.com, pub-8602848692420724, DIRECT, f08c47fec0942fa0"
 check_contains "robots.txt sitemapリンク" "$BASE/robots.txt" "Sitemap:"
 check_status "sitemap.xml" "$BASE/sitemap.xml" 200
+check_status "お問い合わせ" "$BASE/contact.html" 200
+check_contains "お問い合わせに連絡方法" "$BASE/contact.html" "contact@shindan24.com"
+check_status "存在しないURLは正しい404" "$BASE/this-page-does-not-exist" 404
 check_contains "sitemapに/shichuu含む" "$BASE/sitemap.xml" "/shichuu</loc>"
 check_contains "sitemapに/ketsueki含む" "$BASE/sitemap.xml" "/ketsueki</loc>"
 check_contains "sitemapに/meimei含む" "$BASE/sitemap.xml" "/meimei</loc>"
@@ -109,17 +112,16 @@ check_contains "sitemapに/shichuu/r/kinoe含む" "$BASE/sitemap.xml" "/shichuu/
 check_contains "sitemapに/shichuu/r/mizunoto含む(10種の最後)" "$BASE/sitemap.xml" "/shichuu/r/mizunoto"
 check_contains "sitemapに/ketsueki/r/A含む" "$BASE/sitemap.xml" "/ketsueki/r/A</loc>"
 check_contains "sitemapに/ketsueki/r/A/AB含む(ペア)" "$BASE/sitemap.xml" "/ketsueki/r/A/AB"
-check_contains "sitemapに/meimei/r/長尾テール含む(佐藤+湊)" "$BASE/sitemap.xml" "/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A"
-check_contains "sitemapに有名人ロングテール含む(大谷翔平)" "$BASE/sitemap.xml" "%E5%A4%A7%E8%B0%B7"
+check_not_contains "sitemapから任意の姓名結果を除外" "$BASE/sitemap.xml" "/meimei/r/"
 
 curl -s "$BASE/sitemap.xml" -o /tmp/shindan_resp.html
 url_count=$(grep -o '<url>' /tmp/shindan_resp.html | wc -l)
-echo "sitemap内のURL数: $url_count (期待値: 静的35+十干10+血液型単4+血液型ペア10+姓名判断52=111)"
-if [ "$url_count" == "111" ]; then
+echo "sitemap内のURL数: $url_count (期待値: 静的36+十干10+血液型単4+血液型ペア10=60)"
+if [ "$url_count" == "60" ]; then
   echo "PASS  sitemap URL数が期待通り"
   pass=$((pass+1))
 else
-  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 111)"
+  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 60)"
   fail=$((fail+1))
 fi
 
@@ -129,7 +131,7 @@ check_status "フォーム" "$BASE/shichuu" 200
 check_contains "フォームに内部リンクグリッド" "$BASE/shichuu" "link-grid"
 check_redirect_location "compute→結果リダイレクト" "$BASE/shichuu/compute?year=1990&month=5&day=20" "/shichuu/r/"
 check_status "結果ページ(甲)" "$BASE/shichuu/r/kinoe" 200
-check_status "結果ページ(不正キー→リダイレクト)" "$BASE/shichuu/r/notakey" 302
+check_status "結果ページ(不正キー→404)" "$BASE/shichuu/r/notakey" 404
 check_redirect_location "存在しない日付→フォーム" "$BASE/shichuu/compute?year=2026&month=2&day=30" "/shichuu"
 check_not_contains "承認URL未設定時はPRカードを隠す" "$BASE/shichuu/r/kinoe" "affiliate-card"
 
@@ -155,8 +157,8 @@ check_status "推し活タイプ診断 イントロ" "$BASE/q/oshikatsu-type" 20
 check_status "推し活タイプ診断 結果" "$BASE/q/oshikatsu-type/r/kamiseki" 200
 check_status "本当の性格タイプ診断 イントロ" "$BASE/q/honto-no-seikaku" 200
 check_status "人生の選択バランスゲーム イントロ" "$BASE/q/jinsei-balance-game" 200
-check_redirect_location "存在しない診断ID→ホーム" "$BASE/q/not-a-real-quiz" "/"
-check_redirect_location "存在しない結果キー→ホーム" "$BASE/q/oshikatsu-type/r/not-a-real-key" "/"
+check_status "存在しない診断ID→404" "$BASE/q/not-a-real-quiz" 404
+check_status "存在しない結果キー→404" "$BASE/q/oshikatsu-type/r/not-a-real-key" 404
 
 echo ""
 echo "=== 新規: かくれキャラ診断 ==="
@@ -178,7 +180,7 @@ check_contains "簡易診断に20問データ" "$BASE/16type/test" "window.__TYP
 check_status "16タイプ結果(ENFP)" "$BASE/16type/r/ENFP?e=80&s=20&t=20&j=20" 200
 check_contains "ENFP結果に回答バランス" "$BASE/16type/r/ENFP?e=80&s=20&t=20&j=20" "今回の回答バランス"
 check_contains "ENFP結果に恋愛解説" "$BASE/16type/r/ENFP" "恋愛で出やすい傾向"
-check_redirect_location "不正な16タイプ→一覧" "$BASE/16type/r/XXXX" "/16type"
+check_status "不正な16タイプ→404" "$BASE/16type/r/XXXX" 404
 check_status "16タイプ相性フォーム" "$BASE/16type/compatibility" 200
 check_status "16タイプ相性結果" "$BASE/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend" 200
 check_contains "相性結果に友達場面" "$BASE/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend" "友達の相性目安"

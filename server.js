@@ -4,7 +4,6 @@ const rateLimit = require('express-rate-limit');
 const quizzes = require('./data/quizzes');
 const fortuneTools = require('./data/fortune-tools');
 const { STEM_KEYS, BLOOD_TYPES, calcShichuuStem, calcSeimeiHandan } = require('./lib/fortune');
-const { allMeimeiCombos } = require('./data/seo-longtail');
 const { TYPE16_CODES, normalizeType16Code } = require('./data/type16');
 const originalRender = require('./views/render');
 const { createQualityRenderers } = require('./views/quality-render');
@@ -68,6 +67,10 @@ function findQuiz(id) {
   return quizzes.find((q) => q.id === id);
 }
 
+function sendNotFound(res) {
+  return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+}
+
 // --- ホーム ---
 app.get('/', (req, res) => {
   res.send(renderHome(quizzes, fortuneTools));
@@ -96,6 +99,7 @@ app.get('/sitemap.xml', (req, res) => {
     ...TYPE16_CODES.map((code) => `/16type/r/${code}`),
     '/about.html',
     '/editorial-policy.html',
+    '/contact.html',
     '/privacy.html',
     '/terms.html',
   ];
@@ -113,17 +117,11 @@ app.get('/sitemap.xml', (req, res) => {
     });
   });
 
-  // 姓名判断ロングテール: 人気の姓×名の組合せ + 有名人（52件、data/seo-longtail.js参照）
-  const meimeiPaths = allMeimeiCombos().map(
-    ({ sei, mei }) => `/meimei/r/${encodeURIComponent(sei)}/${encodeURIComponent(mei)}`
-  );
-
   const allPaths = [
     ...staticPaths,
     ...shichuuPaths,
     ...ketsuekiSinglePaths,
     ...ketsuekiPairPaths,
-    ...meimeiPaths,
   ];
 
   const urls = allPaths
@@ -136,13 +134,13 @@ app.get('/sitemap.xml', (req, res) => {
 // --- タイプ診断（選択式クイズ） ---
 app.get('/q/:id', (req, res) => {
   const quiz = findQuiz(req.params.id);
-  if (!quiz) return res.redirect('/');
+  if (!quiz) return sendNotFound(res);
   res.send(renderQuizPage(quiz));
 });
 
 app.get('/q/:id/r/:resultKey', (req, res) => {
   const quiz = findQuiz(req.params.id);
-  if (!quiz || !quiz.results[req.params.resultKey]) return res.redirect('/');
+  if (!quiz || !quiz.results[req.params.resultKey]) return sendNotFound(res);
   // タイプ+スコア結合型: クライアントで計算した「一致率」(?s=0~100)があれば結果と一緒に表示。
   // 値がない・範囲外の場合は静かに無視し、従来通りにレンダリング(canonical URLはそのまま維持)。
   const scoreRaw = parseInt(req.query.s, 10);
@@ -177,7 +175,7 @@ app.get('/16type/family', (req, res) => {
 
 app.get('/16type/r/:code', (req, res) => {
   const code = normalizeType16Code(req.params.code);
-  if (!TYPE16_CODES.includes(code)) return res.redirect('/16type');
+  if (!TYPE16_CODES.includes(code)) return sendNotFound(res);
   res.send(renderType16Result(code, req.query));
 });
 
@@ -215,7 +213,7 @@ app.get('/shichuu/compute', (req, res) => {
 });
 
 app.get('/shichuu/r/:stemKey', (req, res) => {
-  if (!STEM_KEYS.includes(req.params.stemKey)) return res.redirect('/shichuu');
+  if (!STEM_KEYS.includes(req.params.stemKey)) return sendNotFound(res);
   res.send(renderShichuuResult(req.params.stemKey));
 });
 
@@ -234,7 +232,7 @@ app.get('/ketsueki/compute', (req, res) => {
   const type = String(req.query.type || '').toUpperCase();
   const partner = String(req.query.partner || '').toUpperCase();
 
-  if (!BLOOD_TYPES.includes(type)) return res.redirect('/ketsueki');
+  if (!BLOOD_TYPES.includes(type)) return sendNotFound(res);
 
   if (partner && BLOOD_TYPES.includes(partner)) {
     const [first, second] = canonicalBloodPair(type, partner);
@@ -245,14 +243,14 @@ app.get('/ketsueki/compute', (req, res) => {
 
 app.get('/ketsueki/r/:type', (req, res) => {
   const type = req.params.type.toUpperCase();
-  if (!BLOOD_TYPES.includes(type)) return res.redirect('/ketsueki');
+  if (!BLOOD_TYPES.includes(type)) return sendNotFound(res);
   res.send(renderKetsuekiResult(type, null));
 });
 
 app.get('/ketsueki/r/:type/:partner', (req, res) => {
   const type = req.params.type.toUpperCase();
   const partner = req.params.partner.toUpperCase();
-  if (!BLOOD_TYPES.includes(type) || !BLOOD_TYPES.includes(partner)) return res.redirect('/ketsueki');
+  if (!BLOOD_TYPES.includes(type) || !BLOOD_TYPES.includes(partner)) return sendNotFound(res);
 
   const [first, second] = canonicalBloodPair(type, partner);
   if (type !== first || partner !== second) {
@@ -278,12 +276,14 @@ app.get('/meimei/r/:sei/:mei', (req, res) => {
   const sei = decodeURIComponent(req.params.sei);
   const mei = decodeURIComponent(req.params.mei);
   const calcResult = calcSeimeiHandan(sei, mei);
+  // 任意入力の名前結果は利用者向け機能として残し、検索用の大量ページにはしません。
+  res.set('X-Robots-Tag', 'noindex, follow');
   res.send(renderMeimeiResult(sei, mei, calcResult));
 });
 
-// 不明なパスはホームへリダイレクト
+// 不明なURLをホームへ転送するとsoft 404になり得るため、正しい404を返します。
 app.get('*', (req, res) => {
-  res.redirect('/');
+  sendNotFound(res);
 });
 
 app.listen(PORT, () => {

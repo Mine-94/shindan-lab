@@ -201,7 +201,9 @@ async function main() {
       'Editorial policy is missing from sitemap'
     );
     const urlCount = (sitemap.text.match(/<url>/g) || []).length;
-    assert(urlCount === 111, `Unexpected sitemap URL count: ${urlCount}`);
+    assert(urlCount === 60, `Unexpected reviewed sitemap URL count: ${urlCount}`);
+    assert(sitemap.text.includes('/contact.html</loc>'), 'Contact page is missing from sitemap');
+    assert(!sitemap.text.includes('/meimei/r/'), 'Thin name-result URLs remain in sitemap');
 
     console.log(`PASS: ${quizzes.length} quizzes and all result pages passed quality checks.`);
     console.log('PASS: home, trust pages, 16-type pages, structured data, HTML and sitemap checks passed.');

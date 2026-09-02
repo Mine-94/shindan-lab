@@ -1,0 +1,35 @@
+name: サイトへのお問い合わせ
+description: 表示不具合、訂正、権利、プライバシー、広告に関する公開窓口です
+title: "[お問い合わせ] "
+labels:
+  - contact
+body:
+  - type: markdown
+    attributes:
+      value: |
+        このフォームの内容は公開されます。氏名、住所、電話番号、メールアドレス、診断に入力した本名などの個人情報を書かないでください。
+  - type: dropdown
+    id: category
+    attributes:
+      label: お問い合わせの種類
+      options:
+        - 表示・動作の不具合
+        - 誤字・内容の訂正
+        - 著作権・商標などの権利
+        - プライバシー・削除依頼
+        - 広告表示
+        - その他
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: 対象ページURL
+      placeholder: https://shindan24.com/...
+  - type: textarea
+    id: details
+    attributes:
+      label: 内容
+      description: 個人情報を除き、問題の内容と再現手順を具体的に記載してください。
+    validations:
+      required: true

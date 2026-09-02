@@ -435,3 +435,75 @@ main { padding-bottom: 40px; }
 .link-grid-item:hover {
   border-color: var(--accent, var(--border));
 }
+
+
+/* ADSENSE_READINESS_2026_09_02: trust, contact and error-page presentation */
+.site-operator {
+  margin: 14px auto;
+  max-width: 860px;
+  color: var(--text-muted, #6a655e);
+  font-size: 0.88rem;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.site-operator a,
+.trust-definition-list a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+.trust-definition-list {
+  display: grid;
+  gap: 0;
+  margin: 18px 0 20px;
+  border: 1px solid #e7e2dc;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.trust-definition-list > div {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.35fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 13px 16px;
+  background: #fff;
+  border-bottom: 1px solid #eee9e3;
+}
+
+.trust-definition-list > div:last-child { border-bottom: 0; }
+.trust-definition-list dt { font-weight: 700; }
+.trust-definition-list dd { margin: 0; overflow-wrap: anywhere; }
+
+.article-byline {
+  margin-top: 18px;
+  color: var(--text-muted, #6a655e);
+  font-size: 0.88rem;
+}
+
+.contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.contact-actions .quiz-btn {
+  width: auto;
+  min-width: 220px;
+  text-align: center;
+}
+
+.error-page {
+  margin: 42px auto;
+  max-width: 760px;
+  text-align: center;
+}
+
+.error-page .contact-actions { justify-content: center; }
+
+@media (max-width: 640px) {
+  .trust-definition-list > div { grid-template-columns: 1fr; gap: 5px; }
+  .contact-actions { flex-direction: column; }
+  .contact-actions .quiz-btn { width: 100%; min-width: 0; }
+}

@@ -112,7 +112,7 @@ async function main() {
 
     const sitemap = await fetchText('/sitemap.xml');
     assert(sitemap.response.status === 200, 'Sitemap did not return 200');
-    assert((sitemap.text.match(/<url>/g) || []).length === 111, 'Sitemap must contain 111 URLs');
+    assert((sitemap.text.match(/<url>/g) || []).length === 60, 'Sitemap must contain 60 reviewed URLs');
     for (const relation of ['love', 'friend', 'work', 'family']) {
       assert(sitemap.text.includes(`/16type/${relation}</loc>`), `${relation} guide missing from sitemap`);
     }
@@ -145,7 +145,7 @@ async function main() {
     );
     assert(linkShareSource.includes('utm_source'), 'Link share attribution missing');
 
-    console.log('PASS: 4 SEO relation guides, invite-to-compare loop, attribution and 111 sitemap URLs validated.');
+    console.log('PASS: 4 SEO relation guides, invite-to-compare loop, attribution and 60 reviewed sitemap URLs validated.');
   } finally {
     child.kill('SIGTERM');
     await new Promise((resolve) => {

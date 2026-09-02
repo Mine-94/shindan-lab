@@ -85,7 +85,9 @@ def patch_daily_log() -> None:
 
 """
     anchor = "---\n\n"
-    text = replace_once(text, anchor, anchor + entry, "daily log first separator")
+    if anchor not in text:
+        raise RuntimeError("Daily log separator was not found")
+    text = text.replace(anchor, anchor + entry, 1)
     path.write_text(text, encoding="utf-8")
 
 

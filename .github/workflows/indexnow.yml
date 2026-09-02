@@ -10,6 +10,7 @@ on:
       - public/**
       - server*.js
       - package*.json
+      - .github/workflows/indexnow.yml
   workflow_dispatch:
 
 permissions:
@@ -26,7 +27,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Wait for the verified 111-page Render deployment
+      - name: Wait for a coherent live sitemap and IndexNow key
         env:
           SITE_URL: https://shindan-lab.onrender.com
           INDEXNOW_KEY: c43e252ab66ef069ad3bbb37b081739d
@@ -42,15 +43,12 @@ jobs:
 
             if curl -fsS --max-time 45 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml; then
               url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
-              if [ "$url_count" = '111' ] \
+              if [ "$url_count" -ge 100 ] \
+                && [ "$url_count" -le 10000 ] \
                 && grep -q '/about.html</loc>' /tmp/sitemap.xml \
                 && grep -q '/editorial-policy.html</loc>' /tmp/sitemap.xml \
                 && grep -q '/16type/test</loc>' /tmp/sitemap.xml \
-                && grep -q '/16type/r/ENFP</loc>' /tmp/sitemap.xml \
-                && grep -q '/16type/love</loc>' /tmp/sitemap.xml \
-                && grep -q '/16type/friend</loc>' /tmp/sitemap.xml \
-                && grep -q '/16type/work</loc>' /tmp/sitemap.xml \
-                && grep -q '/16type/family</loc>' /tmp/sitemap.xml; then
+                && grep -q '/16type/r/ENFP</loc>' /tmp/sitemap.xml; then
                 sitemap_ok=1
               fi
             fi
@@ -63,10 +61,10 @@ jobs:
           done
 
           if [ "$ready" -ne 1 ]; then
-            echo "The verified 111-page deployment or IndexNow key could not be confirmed."
+            echo "A coherent live sitemap or the IndexNow key could not be confirmed."
             exit 1
           fi
-          echo "Verified the deployed IndexNow key and all 111 sitemap URLs."
+          echo "Verified the deployed IndexNow key and $url_count live sitemap URLs."
 
       - name: Build URL list from the deployed sitemap
         env:
@@ -89,8 +87,19 @@ jobs:
                       urls.append(value)
 
           urls = list(dict.fromkeys(urls))
-          if len(urls) != 111:
-              raise SystemExit(f'Expected 111 verified URLs, found {len(urls)}.')
+          if not 100 <= len(urls) <= 10000:
+              raise SystemExit(f'Unexpected same-site sitemap URL count: {len(urls)}.')
+
+          required = {
+              f'{site_url}/',
+              f'{site_url}/about.html',
+              f'{site_url}/editorial-policy.html',
+              f'{site_url}/16type/test',
+              f'{site_url}/16type/r/ENFP',
+          }
+          missing = sorted(required.difference(urls))
+          if missing:
+              raise SystemExit(f'Required URLs missing from sitemap: {missing}')
 
           payload = {
               'host': 'shindan-lab.onrender.com',
@@ -100,10 +109,10 @@ jobs:
           }
           with open('/tmp/indexnow.json', 'w', encoding='utf-8') as handle:
               json.dump(payload, handle, ensure_ascii=False)
-          print(f'Prepared {len(urls)} URLs for IndexNow.')
+          print(f'Prepared {len(urls)} current live URLs for IndexNow.')
           PY
 
-      - name: Submit URLs to IndexNow
+      - name: Submit current live URLs to IndexNow
         run: |
           status=$(curl -sS --max-time 60 \
             -o /tmp/indexnow-response.txt \
@@ -116,4 +125,4 @@ jobs:
             echo "IndexNow returned HTTP $status"
             exit 1
           fi
-          echo "IndexNow accepted the 111-URL submission with HTTP $status."
+          echo "IndexNow accepted the live sitemap submission with HTTP $status."

@@ -67,44 +67,51 @@ def patch_base_layout() -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def add_preview_after_og_url(text: str, og_url_line: str, image_path: str, label: str) -> str:
+    expected = f"{og_url_line}\n      ogImage: '{image_path}',"
+    if expected in text:
+        return text
+    return replace_once(
+        text,
+        f"{og_url_line}\n",
+        f"{og_url_line}\n      ogImage: '{image_path}',\n",
+        label,
+    )
+
+
 def patch_type16_pages() -> None:
     path = Path("views/type16-render.js")
     text = path.read_text(encoding="utf-8")
 
-    if "ogUrl: `${siteUrl}/16type`,\n      ogImage:" not in text:
-        text = replace_once(
-            text,
-            "      ogUrl: `${siteUrl}/16type`,\n",
-            "      ogUrl: `${siteUrl}/16type`,\n      ogImage: '/og/16type.png',\n",
-            "16-type hub preview",
-        )
-    if "ogUrl: `${siteUrl}/16type/test`,\n      ogImage:" not in text:
-        text = replace_once(
-            text,
-            "      ogUrl: `${siteUrl}/16type/test`,\n",
-            "      ogUrl: `${siteUrl}/16type/test`,\n      ogImage: '/og/16type.png',\n",
-            "16-type test preview",
-        )
+    text = add_preview_after_og_url(
+        text,
+        "      ogUrl: `${siteUrl}/16type`,",
+        "/og/16type.png",
+        "16-type hub preview",
+    )
+    text = add_preview_after_og_url(
+        text,
+        "      ogUrl: `${siteUrl}/16type/test`,",
+        "/og/16type.png",
+        "16-type test preview",
+    )
+    text = add_preview_after_og_url(
+        text,
+        "      ogUrl: `${siteUrl}/16type/r/${type.code}`,",
+        "/og/16type.png",
+        "16-type result preview",
+    )
+    text = add_preview_after_og_url(
+        text,
+        "      ogUrl: `${siteUrl}/16type/compatibility`,",
+        "/og/16type.png",
+        "16-type compatibility preview",
+    )
 
-    result_anchor = "      ogUrl: canonicalUrl,\n      themeColor: '#6f5cd7',"
-    if result_anchor in text:
-        text = replace_once(
-            text,
-            result_anchor,
-            "      ogUrl: canonicalUrl,\n      ogImage: '/og/16type.png',\n      themeColor: '#6f5cd7',",
-            "16-type result preview",
+    if text.count("ogImage: '/og/16type.png'") != 4:
+        raise RuntimeError(
+            f"Expected exactly four 16-type preview assignments, found {text.count(\"ogImage: '/og/16type.png'\")}"
         )
-    compatibility_anchor = "      ogUrl: canonicalUrl,\n      themeColor: '#e26d8a',"
-    if compatibility_anchor in text:
-        text = replace_once(
-            text,
-            compatibility_anchor,
-            "      ogUrl: canonicalUrl,\n      ogImage: '/og/16type.png',\n      themeColor: '#e26d8a',",
-            "16-type compatibility preview",
-        )
-
-    if text.count("ogImage: '/og/16type.png'") < 4:
-        raise RuntimeError("Expected social previews on all four 16-type page families")
     path.write_text(text, encoding="utf-8")
 
 

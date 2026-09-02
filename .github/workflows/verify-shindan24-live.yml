@@ -1,0 +1,64 @@
+name: Verify shindan24.com growth release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: https://shindan24.com
+    steps:
+      - name: Verify canonical pages, acquisition loop and social previews
+        run: |
+          curl -fsS --max-time 60 "$SITE_URL/" -o /tmp/home.html
+          curl -fsS --max-time 60 "$SITE_URL/16type" -o /tmp/type16.html
+          curl -fsS --max-time 60 "$SITE_URL/16type/test?compare=ENFP&relation=friend&utm_source=invite" -o /tmp/test.html
+          curl -fsS --max-time 60 "$SITE_URL/16type/r/ISFJ?compare=ENFP&relation=friend" -o /tmp/result.html
+          curl -fsS --max-time 60 "$SITE_URL/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend" -o /tmp/compat.html
+          curl -fsS --max-time 60 "$SITE_URL/16type/love" -o /tmp/love.html
+          curl -fsS --max-time 60 "$SITE_URL/16type/friend" -o /tmp/friend.html
+          curl -fsS --max-time 60 "$SITE_URL/16type/work" -o /tmp/work.html
+          curl -fsS --max-time 60 "$SITE_URL/16type/family" -o /tmp/family.html
+          curl -fsS --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
+          curl -fsS --max-time 60 "$SITE_URL/og/default.png" -o /tmp/default.png
+          curl -fsS --max-time 60 "$SITE_URL/og/16type.png" -o /tmp/16type.png
+          curl -fsS --max-time 60 "$SITE_URL/og/love.png" -o /tmp/love.png
+
+          grep -q 'data-growth-version="2026-09-02-v2"' /tmp/home.html
+          grep -q '関係から相性を探す' /tmp/home.html
+          grep -q '関係別の16タイプ相性ガイド' /tmp/type16.html
+          grep -q 'ENFPの友達から届いた比較リンク' /tmp/test.html
+          grep -q 'data-comparison-ready="true"' /tmp/result.html
+          grep -q 'data-type16-invite-relation="friend"' /tmp/result.html
+          grep -q 'data-type16-share-kind="type"' /tmp/result.html
+          grep -q 'data-type16-share-kind="compatibility"' /tmp/compat.html
+          grep -q 'noindex, follow' /tmp/compat.html
+          grep -q 'data-relation-guide="love"' /tmp/love.html
+          grep -q 'data-relation-guide="friend"' /tmp/friend.html
+          grep -q 'data-relation-guide="work"' /tmp/work.html
+          grep -q 'data-relation-guide="family"' /tmp/family.html
+          grep -q "$SITE_URL/16type/love</loc>" /tmp/sitemap.xml
+          grep -q "$SITE_URL/16type/family</loc>" /tmp/sitemap.xml
+          grep -q "$SITE_URL/og/default.png" /tmp/home.html
+          grep -q "$SITE_URL/og/16type.png" /tmp/type16.html
+          grep -q "$SITE_URL/og/love.png" /tmp/love.html
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          png_signature = bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+          for name in ('default', '16type', 'love'):
+              data = Path(f'/tmp/{name}.png').read_bytes()
+              assert data[:8] == png_signature, f'{name}.png is not a PNG'
+              assert int.from_bytes(data[16:20], 'big') == 1200
+              assert int.from_bytes(data[20:24], 'big') == 630
+
+          sitemap = Path('/tmp/sitemap.xml').read_text(encoding='utf-8')
+          assert sitemap.count('<url>') == 111
+          assert 'shindan-lab.onrender.com' not in sitemap
+          print('LIVE PASS: shindan24.com serves 111 canonical pages, acquisition loop and social previews.')
+          PY

@@ -1,0 +1,76 @@
+name: Apply AdSense approval readiness
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-adsense-readiness.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shindan-lab-adsense-readiness
+  cancel-in-progress: false
+
+jobs:
+  apply-test-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply assertion-based AdSense readiness migration
+        run: python3 scripts/apply_adsense_readiness.py
+
+      - name: Validate source syntax
+        run: |
+          python3 -m py_compile scripts/apply_adsense_readiness.py
+          node --check server.js
+          node --check views/render.js
+          node --check scripts/test-adsense-readiness.js
+          node --check scripts/test-growth.js
+          node --check scripts/test-quality.js
+
+      - name: Run full shell regression suite
+        run: bash run_tests.sh
+
+      - name: Run packaged integration tests
+        run: npm test
+
+      - name: Commit only fully tested approval-readiness changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            server.js \
+            views/render.js \
+            public/about.html \
+            public/editorial-policy.html \
+            public/privacy.html \
+            public/terms.html \
+            public/contact.html \
+            public/404.html \
+            public/css/style.css \
+            .github/ISSUE_TEMPLATE/site-contact.yml \
+            .github/workflows/indexnow.yml \
+            .github/workflows/verify-live-quality.yml \
+            docs/adsense-approval-readiness-2026-09-02.md \
+            scripts/test-adsense-readiness.js \
+            scripts/test-growth.js \
+            scripts/test-quality.js \
+            run_tests.sh \
+            package.json
+          if git diff --cached --quiet; then
+            echo "AdSense readiness changes are already current."
+            exit 0
+          fi
+          git commit -m "Harden Japanese site for AdSense review"
+          git push origin main

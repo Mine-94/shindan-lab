@@ -18,9 +18,9 @@ from typing import Iterable
 
 USER_AGENT = (
     "Mozilla/5.0 (compatible; ShindanLabTrendMonitor/1.1; "
-    "+https://shindan-lab.onrender.com/about.html)"
+    "+https://shindan24.com/about.html)"
 )
-SITE_URL = "https://shindan-lab.onrender.com"
+SITE_URL = "https://shindan24.com"
 KEYWORDS = (
     "診断",
     "占い",

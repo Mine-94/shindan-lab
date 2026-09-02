@@ -636,9 +636,10 @@ function createGrowthRenderers(original) {
   </main>`;
 
     const html = original.baseLayout({
-      title: `${guide.title}｜16タイプの違いと会話のコツを無料確認`,
+      title: `MBTI関連・${guide.title}｜16タイプの違いと会話のコツ`,
       description: guide.description,
       ogUrl: `${siteUrl}${relationGuidePath(guide.key)}`,
+      ogImage: `/og/${guide.key}.png`,
       themeColor: '#6f5cd7',
       content,
       structuredData: [

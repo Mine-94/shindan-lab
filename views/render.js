@@ -38,7 +38,10 @@ function safeJsonLd(data) {
   return JSON.stringify(data).replace(/</g, '\\u003c');
 }
 
-function baseLayout({ title, description, ogUrl, bodyClass, content, themeColor, structuredData }) {
+function baseLayout({ title, description, ogUrl, ogImage, bodyClass, content, themeColor, structuredData }) {
+  const socialImage = /^https?:\/\//.test(ogImage || '')
+    ? ogImage
+    : `${SITE_URL}${ogImage || '/og/default.png'}`;
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -58,9 +61,17 @@ ${GOOGLE_SITE_VERIFICATION ? `<meta name="google-site-verification" content="${e
 <meta property="og:title" content="${escapeHtml(title)}" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:url" content="${escapeHtml(ogUrl)}" />
+<meta property="og:image" content="${escapeHtml(socialImage)}" />
+<meta property="og:image:secure_url" content="${escapeHtml(socialImage)}" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="${escapeHtml(`${title}｜${SITE_NAME}`)}" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${escapeHtml(title)}" />
 <meta name="twitter:description" content="${escapeHtml(description)}" />
+<meta name="twitter:image" content="${escapeHtml(socialImage)}" />
+<meta name="twitter:image:alt" content="${escapeHtml(`${title}｜${SITE_NAME}`)}" />
 ${themeColor ? `<meta name="theme-color" content="${themeColor}" />` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

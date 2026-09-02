@@ -420,6 +420,7 @@ function createType16Renderers(original) {
       description:
         'MBTI関連でよく見かけるE/I・S/N・T/F・J/Pの4文字タイプを、公式MBTIとは別の独自解説で整理。無料20問診断、恋愛・友達・仕事・家族の相性チェック、16タイプ一覧を利用できます。',
       ogUrl: `${siteUrl}/16type`,
+      ogImage: '/og/16type.png',
       themeColor: '#6f5cd7',
       content,
       structuredData: [
@@ -507,6 +508,7 @@ function createType16Renderers(original) {
       description:
         '無料・登録不要の16タイプ簡易診断。20問でE/I・S/N・T/F・J/Pの今の傾向と4文字タイプを確認できます。公式MBTIとは別の独自エンタメ診断です。',
       ogUrl: `${siteUrl}/16type/test`,
+      ogImage: '/og/16type.png',
       themeColor: '#6f5cd7',
       content,
       structuredData: [
@@ -609,6 +611,7 @@ function createType16Renderers(original) {
       title: `${type.code} ${type.name}の性格・恋愛・仕事・相性 - 16タイプ解説`,
       description: `${type.code}「${type.name}」の特徴を独自解説。強み、注意点、恋愛、友達、仕事、コミュニケーションのコツを確認できます。公式MBTIとは別の非公式16タイプ情報です。`,
       ogUrl: `${siteUrl}/16type/r/${type.code}`,
+      ogImage: '/og/16type.png',
       themeColor: '#6f5cd7',
       content,
       structuredData: [
@@ -777,6 +780,7 @@ function createType16Renderers(original) {
       description:
         '自分と相手の4文字タイプを選び、恋愛・友達・仕事・家族の場面別に、噛み合いやすい点、すれ違いやすい点、会話のコツを確認。MBTI公式とは別の非公式16タイプ相性ツールです。',
       ogUrl: `${siteUrl}/16type/compatibility`,
+      ogImage: '/og/16type.png',
       themeColor: '#e26d8a',
       content,
       structuredData: [

@@ -14,6 +14,8 @@ const { createType16ShareRenderers } = require('./views/type16-share-render');
 Object.assign(originalRender, createType16ShareRenderers({ ...originalRender }));
 const { createGrowthRenderers } = require('./views/growth-render');
 Object.assign(originalRender, createGrowthRenderers({ ...originalRender }));
+const { createAdsenseContentRenderers } = require('./views/adsense-content-render');
+Object.assign(originalRender, createAdsenseContentRenderers({ ...originalRender }));
 const {
   renderHome,
   renderQuizPage,

@@ -1,5 +1,6 @@
 name: Enable Japanese 16-type share cards
 
+# Revision 2: the legacy 16-type homepage fixture now matches the live homepage structure.
 on:
   push:
     branches:
@@ -32,6 +33,7 @@ jobs:
           node --check views/type16-share-render.js
           node --check public/js/type16-share-card.js
           node --check scripts/test-type16-share.js
+          node --check scripts/test-type16.js
           node --check server.js
 
       - name: Validate share-card payloads and browser fallbacks

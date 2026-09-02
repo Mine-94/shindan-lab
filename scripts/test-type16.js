@@ -77,14 +77,32 @@ const renderers = createType16Renderers({
   escapeHtml,
   baseLayout,
   siteHeaderNav: () => '<a href="/">しんだんラボ</a>',
-  renderHome: () =>
-    '<!doctype html><html><head></head><body><main><section class="info-card site-guide" aria-labelledby="about-shindan-lab"></section></main></body></html>',
+  renderHome: () => `<!doctype html><html><head></head><body>
+    <main class="container">
+      <section class="content-section">
+        <h2 class="section-title">占い</h2>
+        <div class="quiz-grid"></div>
+      </section>
+      <section class="content-section">
+        <h2 class="section-title">タイプ診断</h2>
+        <div class="quiz-grid"></div>
+      </section>
+      <section class="info-card site-guide" aria-labelledby="about-shindan-lab"></section>
+    </main>
+  </body></html>`,
 });
 
 const home = renderers.renderHome([], []);
 assert(home.includes('16タイプ・MBTI関連'));
 assert(home.includes('/16type/compatibility'));
 assert(home.includes('/css/type16.css'));
+assert(
+  home.indexOf('data-home-priority-version=') < home.indexOf('<h2 class="section-title">タイプ診断</h2>')
+);
+assert(
+  home.indexOf('<h2 class="section-title">タイプ診断</h2>') <
+    home.indexOf('<h2 class="section-title">占い</h2>')
+);
 
 const hub = renderers.renderType16Hub();
 assert(hub.includes('16タイプ性格一覧'));

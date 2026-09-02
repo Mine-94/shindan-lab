@@ -138,7 +138,7 @@ function withType16Styles(html) {
 function noindexQueryResult(html) {
   return html.replace(
     '</head>',
-    '<meta name="robots" content="noindex, follow" />\n</head>'
+    '<meta name="robots" content="noindex, follow, max-image-preview:large" />\n</head>'
   );
 }
 

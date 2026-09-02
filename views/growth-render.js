@@ -262,7 +262,7 @@ function withGrowthAssets(html) {
 
 function noindexQueryPage(html) {
   if (html.includes('name="robots" content="noindex, follow"')) return html;
-  return html.replace('</head>', '<meta name="robots" content="noindex, follow" />\n</head>');
+  return html.replace('</head>', '<meta name="robots" content="noindex, follow, max-image-preview:large" />\n</head>');
 }
 
 function faqJsonLd(faqs) {

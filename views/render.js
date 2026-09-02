@@ -53,6 +53,7 @@ function baseLayout({ title, description, ogUrl, ogImage, bodyClass, content, th
 <link rel="manifest" href="/manifest.json" />
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}" />
+<meta name="robots" content="max-image-preview:large" />
 <link rel="canonical" href="${escapeHtml(ogUrl)}" />
 ${GOOGLE_SITE_VERIFICATION ? `<meta name="google-site-verification" content="${escapeHtml(GOOGLE_SITE_VERIFICATION)}" />` : ''}
 <meta property="og:type" content="website" />

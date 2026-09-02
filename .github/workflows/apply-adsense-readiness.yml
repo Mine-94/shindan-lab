@@ -45,10 +45,16 @@ jobs:
       - name: Run packaged integration tests
         run: npm test
 
-      - name: Commit only fully tested approval-readiness changes
+      - name: Commit only fully tested application changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # GitHub Actions tokens cannot rewrite workflow files unless they have
+          # a separate workflows permission. Those two files are updated through
+          # the GitHub connector after the application commit succeeds.
+          git restore .github/workflows/indexnow.yml .github/workflows/verify-live-quality.yml
+
           git add \
             server.js \
             views/render.js \
@@ -60,8 +66,6 @@ jobs:
             public/404.html \
             public/css/style.css \
             .github/ISSUE_TEMPLATE/site-contact.yml \
-            .github/workflows/indexnow.yml \
-            .github/workflows/verify-live-quality.yml \
             docs/adsense-approval-readiness-2026-09-02.md \
             scripts/test-adsense-readiness.js \
             scripts/test-growth.js \
@@ -69,7 +73,7 @@ jobs:
             run_tests.sh \
             package.json
           if git diff --cached --quiet; then
-            echo "AdSense readiness changes are already current."
+            echo "AdSense readiness application changes are already current."
             exit 0
           fi
           git commit -m "Harden Japanese site for AdSense review"

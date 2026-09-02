@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""Enable Open Graph/Twitter images after generated PNGs are validated."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+
+def replace_once(text: str, old: str, new: str, label: str) -> str:
+    count = text.count(old)
+    if count != 1:
+        raise RuntimeError(f"Expected one {label} anchor, found {count}")
+    return text.replace(old, new, 1)
+
+
+def patch_base_layout() -> None:
+    path = Path("views/render.js")
+    text = path.read_text(encoding="utf-8")
+
+    old_signature = (
+        "function baseLayout({ title, description, ogUrl, bodyClass, content, themeColor, structuredData }) {\n"
+        "  return `<!DOCTYPE html>"
+    )
+    new_signature = (
+        "function baseLayout({ title, description, ogUrl, ogImage, bodyClass, content, themeColor, structuredData }) {\n"
+        "  const socialImage = /^https?:\\/\\//.test(ogImage || '')\n"
+        "    ? ogImage\n"
+        "    : `${SITE_URL}${ogImage || '/og/default.png'}`;\n"
+        "  return `<!DOCTYPE html>"
+    )
+    if "const socialImage =" not in text:
+        text = replace_once(text, old_signature, new_signature, "baseLayout social image signature")
+
+    if 'property="og:image"' not in text:
+        anchor = '<meta property="og:url" content="${escapeHtml(ogUrl)}" />\n'
+        block = (
+            anchor
+            + '<meta property="og:image" content="${escapeHtml(socialImage)}" />\n'
+            + '<meta property="og:image:secure_url" content="${escapeHtml(socialImage)}" />\n'
+            + '<meta property="og:image:type" content="image/png" />\n'
+            + '<meta property="og:image:width" content="1200" />\n'
+            + '<meta property="og:image:height" content="630" />\n'
+            + '<meta property="og:image:alt" content="${escapeHtml(`${title}｜${SITE_NAME}`)}" />\n'
+        )
+        text = replace_once(text, anchor, block, "Open Graph image metadata")
+
+    if 'name="twitter:image"' not in text:
+        anchor = '<meta name="twitter:description" content="${escapeHtml(description)}" />\n'
+        block = (
+            anchor
+            + '<meta name="twitter:image" content="${escapeHtml(socialImage)}" />\n'
+            + '<meta name="twitter:image:alt" content="${escapeHtml(`${title}｜${SITE_NAME}`)}" />\n'
+        )
+        text = replace_once(text, anchor, block, "Twitter image metadata")
+
+    required = [
+        "ogImage, bodyClass",
+        "const socialImage =",
+        'property="og:image"',
+        'name="twitter:image"',
+        "og:image:width",
+    ]
+    for marker in required:
+        if marker not in text:
+            raise RuntimeError(f"Missing social preview marker in views/render.js: {marker}")
+    path.write_text(text, encoding="utf-8")
+
+
+def patch_type16_pages() -> None:
+    path = Path("views/type16-render.js")
+    text = path.read_text(encoding="utf-8")
+
+    # All four baseLayout calls in this module are 16-type pages. Insert once per
+    # exact ogUrl line, while remaining idempotent.
+    replacements = {
+        "      ogUrl: `${siteUrl}/16type`,\n": (
+            "      ogUrl: `${siteUrl}/16type`,\n      ogImage: '/og/16type.png',\n"
+        ),
+        "      ogUrl: `${siteUrl}/16type/test`,\n": (
+            "      ogUrl: `${siteUrl}/16type/test`,\n      ogImage: '/og/16type.png',\n"
+        ),
+        "      ogUrl: canonicalUrl,\n": (
+            "      ogUrl: canonicalUrl,\n      ogImage: '/og/16type.png',\n"
+        ),
+        "      ogUrl: canonicalUrl,\n      themeColor: '#e26d8a',": (
+            "      ogUrl: canonicalUrl,\n      ogImage: '/og/16type.png',\n      themeColor: '#e26d8a',"
+        ),
+    }
+
+    # The result and compatibility functions may both use canonicalUrl. Add the
+    # image directly before their distinct theme colors when needed.
+    if "ogUrl: `${siteUrl}/16type`,\n      ogImage:" not in text:
+        text = replace_once(
+            text,
+            "      ogUrl: `${siteUrl}/16type`,\n",
+            replacements["      ogUrl: `${siteUrl}/16type`,\n"],
+            "16-type hub preview",
+        )
+    if "ogUrl: `${siteUrl}/16type/test`,\n      ogImage:" not in text:
+        text = replace_once(
+            text,
+            "      ogUrl: `${siteUrl}/16type/test`,\n",
+            replacements["      ogUrl: `${siteUrl}/16type/test`,\n"],
+            "16-type test preview",
+        )
+
+    # Result page uses purple theme; compatibility uses pink theme.
+    result_anchor = "      ogUrl: canonicalUrl,\n      themeColor: '#6f5cd7',"
+    if result_anchor in text:
+        text = replace_once(
+            text,
+            result_anchor,
+            "      ogUrl: canonicalUrl,\n      ogImage: '/og/16type.png',\n      themeColor: '#6f5cd7',",
+            "16-type result preview",
+        )
+    compatibility_anchor = "      ogUrl: canonicalUrl,\n      themeColor: '#e26d8a',"
+    if compatibility_anchor in text:
+        text = replace_once(
+            text,
+            compatibility_anchor,
+            "      ogUrl: canonicalUrl,\n      ogImage: '/og/16type.png',\n      themeColor: '#e26d8a',",
+            "16-type compatibility preview",
+        )
+
+    if text.count("ogImage: '/og/16type.png'") < 4:
+        raise RuntimeError("Expected social previews on all four 16-type page families")
+    path.write_text(text, encoding="utf-8")
+
+
+def patch_relation_pages() -> None:
+    path = Path("views/growth-render.js")
+    text = path.read_text(encoding="utf-8")
+    if "ogImage: `/og/${guide.key}.png`," not in text:
+        text = replace_once(
+            text,
+            "      ogUrl: `${siteUrl}${relationGuidePath(guide.key)}`,\n",
+            "      ogUrl: `${siteUrl}${relationGuidePath(guide.key)}`,\n"
+            "      ogImage: `/og/${guide.key}.png`,\n",
+            "relation guide preview",
+        )
+
+    # Keep the official distinction visible while matching Japanese search
+    # wording more directly in title/description.
+    old_title = "      title: `${guide.title}｜16タイプの違いと会話のコツを無料確認`,"
+    new_title = (
+        "      title: `MBTI関連・${guide.title}｜16タイプの違いと会話のコツ`,"
+    )
+    if old_title in text:
+        text = replace_once(text, old_title, new_title, "relation guide SEO title")
+
+    if "ogImage: `/og/${guide.key}.png`," not in text:
+        raise RuntimeError("Relation guide preview image was not installed")
+    path.write_text(text, encoding="utf-8")
+
+
+def patch_package() -> None:
+    path = Path("package.json")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    current = data.setdefault("scripts", {}).get("test", "")
+    command = "node scripts/test-social-previews.js"
+    if command not in current:
+        data["scripts"]["test"] = f"{command} && {current}" if current else command
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def main() -> None:
+    patch_base_layout()
+    patch_type16_pages()
+    patch_relation_pages()
+    patch_package()
+    print("Enabled 1200x630 Open Graph and Twitter preview images on Japanese pages.")
+
+
+if __name__ == "__main__":
+    main()

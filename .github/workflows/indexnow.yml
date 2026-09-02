@@ -27,9 +27,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Wait for a coherent live sitemap and IndexNow key
+      - name: Wait for the canonical 111-page sitemap and IndexNow key
         env:
-          SITE_URL: https://shindan-lab.onrender.com
+          SITE_URL: https://shindan24.com
           INDEXNOW_KEY: c43e252ab66ef069ad3bbb37b081739d
         run: |
           ready=0
@@ -43,12 +43,15 @@ jobs:
 
             if curl -fsS --max-time 45 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml; then
               url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
-              if [ "$url_count" -ge 100 ] \
-                && [ "$url_count" -le 10000 ] \
-                && grep -q '/about.html</loc>' /tmp/sitemap.xml \
-                && grep -q '/editorial-policy.html</loc>' /tmp/sitemap.xml \
-                && grep -q '/16type/test</loc>' /tmp/sitemap.xml \
-                && grep -q '/16type/r/ENFP</loc>' /tmp/sitemap.xml; then
+              if [ "$url_count" = '111' ] \
+                && grep -q "$SITE_URL/about.html</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/editorial-policy.html</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/16type/test</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/16type/r/ENFP</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/16type/love</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/16type/friend</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/16type/work</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/16type/family</loc>" /tmp/sitemap.xml; then
                 sitemap_ok=1
               fi
             fi
@@ -61,14 +64,14 @@ jobs:
           done
 
           if [ "$ready" -ne 1 ]; then
-            echo "A coherent live sitemap or the IndexNow key could not be confirmed."
+            echo "The canonical 111-page sitemap or IndexNow key could not be confirmed."
             exit 1
           fi
-          echo "Verified the deployed IndexNow key and $url_count live sitemap URLs."
+          echo "Verified the shindan24.com IndexNow key and all 111 sitemap URLs."
 
-      - name: Build URL list from the deployed sitemap
+      - name: Build URL list from the canonical sitemap
         env:
-          SITE_URL: https://shindan-lab.onrender.com
+          SITE_URL: https://shindan24.com
           INDEXNOW_KEY: c43e252ab66ef069ad3bbb37b081739d
         run: |
           python - <<'PY'
@@ -83,12 +86,12 @@ jobs:
           for element in root.iter():
               if element.tag.endswith('loc') and element.text:
                   value = element.text.strip()
-                  if value.startswith(site_url):
+                  if value.startswith(f'{site_url}/') or value == site_url:
                       urls.append(value)
 
           urls = list(dict.fromkeys(urls))
-          if not 100 <= len(urls) <= 10000:
-              raise SystemExit(f'Unexpected same-site sitemap URL count: {len(urls)}.')
+          if len(urls) != 111:
+              raise SystemExit(f'Expected 111 canonical URLs, found {len(urls)}.')
 
           required = {
               f'{site_url}/',
@@ -96,23 +99,27 @@ jobs:
               f'{site_url}/editorial-policy.html',
               f'{site_url}/16type/test',
               f'{site_url}/16type/r/ENFP',
+              f'{site_url}/16type/love',
+              f'{site_url}/16type/friend',
+              f'{site_url}/16type/work',
+              f'{site_url}/16type/family',
           }
           missing = sorted(required.difference(urls))
           if missing:
               raise SystemExit(f'Required URLs missing from sitemap: {missing}')
 
           payload = {
-              'host': 'shindan-lab.onrender.com',
+              'host': 'shindan24.com',
               'key': key,
               'keyLocation': f'{site_url}/{key}.txt',
               'urlList': urls,
           }
           with open('/tmp/indexnow.json', 'w', encoding='utf-8') as handle:
               json.dump(payload, handle, ensure_ascii=False)
-          print(f'Prepared {len(urls)} current live URLs for IndexNow.')
+          print(f'Prepared {len(urls)} canonical URLs for IndexNow.')
           PY
 
-      - name: Submit current live URLs to IndexNow
+      - name: Submit canonical URLs to IndexNow
         run: |
           status=$(curl -sS --max-time 60 \
             -o /tmp/indexnow-response.txt \
@@ -125,4 +132,4 @@ jobs:
             echo "IndexNow returned HTTP $status"
             exit 1
           fi
-          echo "IndexNow accepted the live sitemap submission with HTTP $status."
+          echo "IndexNow accepted all 111 shindan24.com URLs with HTTP $status."

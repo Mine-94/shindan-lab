@@ -11,7 +11,10 @@ const { STEM_KEYS } = require('../lib/fortune');
 const { MEIMEI_FEATURED } = require('../data/seo-longtail');
 
 const SITE_NAME = 'しんだんラボ';
-const SITE_URL = process.env.SITE_URL || 'https://example.onrender.com'; // デプロイ後、実際のドメインに置き換えてください
+const OFFICIAL_SITE_URL = 'https://shindan24.com';
+const configuredSiteUrl = (process.env.SITE_URL || OFFICIAL_SITE_URL).replace(/\/+$/, '');
+// Renderに古い既定アドレスが環境変数として残っていても、canonical・sitemapは公式ドメインを使用します。
+const SITE_URL = configuredSiteUrl === 'https://shindan-lab.onrender.com' ? OFFICIAL_SITE_URL : configuredSiteUrl;
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION || '';
 const ADSENSE_CLIENT_ID = process.env.ADSENSE_CLIENT_ID || ''; // 例: ca-pub-8602848692420724
 const AFFILIATE_URL = /^https?:\/\//.test(process.env.AFFILIATE_URL || '')

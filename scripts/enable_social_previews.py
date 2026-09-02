@@ -71,41 +71,21 @@ def patch_type16_pages() -> None:
     path = Path("views/type16-render.js")
     text = path.read_text(encoding="utf-8")
 
-    # All four baseLayout calls in this module are 16-type pages. Insert once per
-    # exact ogUrl line, while remaining idempotent.
-    replacements = {
-        "      ogUrl: `${siteUrl}/16type`,\n": (
-            "      ogUrl: `${siteUrl}/16type`,\n      ogImage: '/og/16type.png',\n"
-        ),
-        "      ogUrl: `${siteUrl}/16type/test`,\n": (
-            "      ogUrl: `${siteUrl}/16type/test`,\n      ogImage: '/og/16type.png',\n"
-        ),
-        "      ogUrl: canonicalUrl,\n": (
-            "      ogUrl: canonicalUrl,\n      ogImage: '/og/16type.png',\n"
-        ),
-        "      ogUrl: canonicalUrl,\n      themeColor: '#e26d8a',": (
-            "      ogUrl: canonicalUrl,\n      ogImage: '/og/16type.png',\n      themeColor: '#e26d8a',"
-        ),
-    }
-
-    # The result and compatibility functions may both use canonicalUrl. Add the
-    # image directly before their distinct theme colors when needed.
     if "ogUrl: `${siteUrl}/16type`,\n      ogImage:" not in text:
         text = replace_once(
             text,
             "      ogUrl: `${siteUrl}/16type`,\n",
-            replacements["      ogUrl: `${siteUrl}/16type`,\n"],
+            "      ogUrl: `${siteUrl}/16type`,\n      ogImage: '/og/16type.png',\n",
             "16-type hub preview",
         )
     if "ogUrl: `${siteUrl}/16type/test`,\n      ogImage:" not in text:
         text = replace_once(
             text,
             "      ogUrl: `${siteUrl}/16type/test`,\n",
-            replacements["      ogUrl: `${siteUrl}/16type/test`,\n"],
+            "      ogUrl: `${siteUrl}/16type/test`,\n      ogImage: '/og/16type.png',\n",
             "16-type test preview",
         )
 
-    # Result page uses purple theme; compatibility uses pink theme.
     result_anchor = "      ogUrl: canonicalUrl,\n      themeColor: '#6f5cd7',"
     if result_anchor in text:
         text = replace_once(
@@ -140,12 +120,10 @@ def patch_relation_pages() -> None:
             "relation guide preview",
         )
 
-    # Keep the official distinction visible while matching Japanese search
-    # wording more directly in title/description.
+    # Match high-intent Japanese search wording while keeping the visible and
+    # metadata disclaimer that this is not the official MBTI assessment.
     old_title = "      title: `${guide.title}｜16タイプの違いと会話のコツを無料確認`,"
-    new_title = (
-        "      title: `MBTI関連・${guide.title}｜16タイプの違いと会話のコツ`,"
-    )
+    new_title = "      title: `MBTI関連・${guide.title}｜16タイプの違いと会話のコツ`,"
     if old_title in text:
         text = replace_once(text, old_title, new_title, "relation guide SEO title")
 

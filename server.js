@@ -11,6 +11,8 @@ const { createQualityRenderers } = require('./views/quality-render');
 Object.assign(originalRender, createQualityRenderers({ ...originalRender }));
 const { createType16Renderers } = require('./views/type16-render');
 Object.assign(originalRender, createType16Renderers({ ...originalRender }));
+const { createType16ShareRenderers } = require('./views/type16-share-render');
+Object.assign(originalRender, createType16ShareRenderers({ ...originalRender }));
 const {
   renderHome,
   renderQuizPage,

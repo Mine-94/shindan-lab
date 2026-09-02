@@ -1,4 +1,4 @@
-name: Diagnose live Japanese growth revision
+name: Diagnose live AdSense readiness
 
 on:
   push:
@@ -15,31 +15,50 @@ jobs:
   diagnose:
     runs-on: ubuntu-latest
     env:
-      SITE_URL: https://shindan-lab.onrender.com
+      SITE_URL: https://shindan24.com
     steps:
-      - name: Inspect current live revision
+      - name: Inspect current live AdSense revision without masking the result
         run: |
           set -u
-          for path in / /growth-release-2026-09-02.txt /16type/love /sitemap.xml; do
-            safe=$(printf '%s' "$path" | tr '/?' '__')
-            echo "===== $path ====="
-            status=$(curl -sS -L --max-time 60 -D "/tmp/${safe}.headers" -o "/tmp/${safe}.body" -w '%{http_code}' "$SITE_URL$path" || true)
+          paths=(
+            "/"
+            "/about.html"
+            "/contact.html"
+            "/privacy.html"
+            "/sitemap.xml"
+            "/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A"
+            "/adsense-readiness-missing-page"
+          )
+
+          for request_path in "${paths[@]}"; do
+            safe=$(printf '%s' "$request_path" | tr '/?%&=' '______')
+            echo "===== $request_path ====="
+            status=$(curl -sS --max-time 60 -D "/tmp/${safe}.headers" -o "/tmp/${safe}.body" -w '%{http_code}' "$SITE_URL$request_path" || true)
             echo "HTTP $status"
-            sed -n '1,20p' "/tmp/${safe}.headers" || true
+            grep -Ei '^(location|x-robots-tag|content-type):' "/tmp/${safe}.headers" || true
             echo "bytes=$(wc -c < "/tmp/${safe}.body" 2>/dev/null || echo 0)"
-            case "$path" in
+
+            case "$request_path" in
               /)
-                grep -Eo 'data-home-priority-version="[^"]+"|data-growth-version="[^"]+"|関係から相性を探す' "/tmp/${safe}.body" | head -n 20 || true
+                grep -Eo '運営・編集：しんだんラボ編集部|href="/contact.html"' "/tmp/${safe}.body" | head -n 10 || true
                 ;;
-              /growth-release-2026-09-02.txt)
-                cat "/tmp/${safe}.body" || true
+              /about.html)
+                grep -Eo '運営者情報|しんだんラボ編集部|shindan-lab.onrender.com' "/tmp/${safe}.body" | head -n 10 || true
                 ;;
-              /16type/love)
-                grep -Eo 'data-relation-guide="[^"]+"|16タイプ恋愛相性ガイド|<title>[^<]+' "/tmp/${safe}.body" | head -n 20 || true
+              /contact.html)
+                grep -Eo 'contact@shindan24.com|site-contact.yml|お問い合わせ' "/tmp/${safe}.body" | head -n 10 || true
+                ;;
+              /privacy.html)
+                grep -Eo '第三者配信事業者|ウェブビーコン|Google広告設定' "/tmp/${safe}.body" | head -n 10 || true
                 ;;
               /sitemap.xml)
                 echo "url_count=$(grep -o '<url>' "/tmp/${safe}.body" | wc -l | tr -d ' ')"
-                grep -Eo '/16type/(love|friend|work|family)</loc>' "/tmp/${safe}.body" || true
+                grep -Eo '/contact.html</loc>|/meimei/r/' "/tmp/${safe}.body" | head -n 10 || true
+                ;;
+              /adsense-readiness-missing-page)
+                grep -Eo 'ページが見つかりません' "/tmp/${safe}.body" | head -n 5 || true
                 ;;
             esac
           done
+
+          echo "Diagnostic completed. Review the markers above; this job intentionally does not convert a stale deployment into a code failure."

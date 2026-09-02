@@ -1,0 +1,139 @@
+name: Verify and submit Japanese growth pages once
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-growth-live-once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-submit:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: https://shindan-lab.onrender.com
+      INDEXNOW_KEY: c43e252ab66ef069ad3bbb37b081739d
+    steps:
+      - name: Wait for the 111-page growth deployment
+        run: |
+          ready=0
+          for attempt in $(seq 1 36); do
+            curl -fsS --max-time 45 "$SITE_URL/" -o /tmp/home.html || true
+            curl -fsS --max-time 45 "$SITE_URL/16type/love" -o /tmp/love.html || true
+            curl -fsS --max-time 45 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml || true
+            count=$(grep -o '<url>' /tmp/sitemap.xml 2>/dev/null | wc -l | tr -d ' ')
+            if grep -q 'data-growth-version="2026-09-02-v2"' /tmp/home.html 2>/dev/null \
+              && grep -q 'data-relation-guide="love"' /tmp/love.html 2>/dev/null \
+              && grep -q '/16type/family</loc>' /tmp/sitemap.xml 2>/dev/null \
+              && [ "$count" = '111' ]; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'The Japanese growth deployment did not become ready.'
+            exit 1
+          fi
+          echo 'The 111-page Japanese growth deployment is live.'
+
+      - name: Verify acquisition loop on the live site
+        run: |
+          curl -fsS --max-time 45 "$SITE_URL/" -o /tmp/home.html
+          curl -fsS --max-time 45 "$SITE_URL/16type" -o /tmp/type16.html
+          curl -fsS --max-time 45 "$SITE_URL/16type/test?compare=ENFP&relation=friend&utm_source=invite" -o /tmp/test.html
+          curl -fsS --max-time 45 "$SITE_URL/16type/r/ISFJ?compare=ENFP&relation=friend" -o /tmp/result.html
+          curl -fsS --max-time 45 "$SITE_URL/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend" -o /tmp/compat.html
+          curl -fsS --max-time 45 "$SITE_URL/16type/love" -o /tmp/love.html
+          curl -fsS --max-time 45 "$SITE_URL/16type/friend" -o /tmp/friend.html
+          curl -fsS --max-time 45 "$SITE_URL/16type/work" -o /tmp/work.html
+          curl -fsS --max-time 45 "$SITE_URL/16type/family" -o /tmp/family.html
+          curl -fsS --max-time 45 "$SITE_URL/js/growth.js" -o /tmp/growth.js
+          curl -fsS --max-time 45 "$SITE_URL/js/type16-test.js" -o /tmp/type16-test.js
+          curl -fsS --max-time 45 "$SITE_URL/js/type16-share-card.js" -o /tmp/share.js
+          curl -fsS --max-time 45 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
+
+          grep -q '関係から相性を探す' /tmp/home.html
+          grep -q '関係別の16タイプ相性ガイド' /tmp/type16.html
+          grep -q 'ENFPの友達から届いた比較リンク' /tmp/test.html
+          grep -q 'data-comparison-ready="true"' /tmp/result.html
+          grep -q 'ENFPとの友達相性を見る' /tmp/result.html
+          grep -q 'data-type16-invite-relation="friend"' /tmp/result.html
+          grep -q 'data-type16-invite-relation="love"' /tmp/result.html
+          grep -q 'data-type16-share-kind="type"' /tmp/result.html
+          grep -q '恋愛相性ガイド' /tmp/compat.html
+          grep -q 'data-type16-share-kind="compatibility"' /tmp/compat.html
+          grep -q 'noindex, follow' /tmp/compat.html
+          grep -q '16タイプ恋愛相性ガイド' /tmp/love.html
+          grep -q 'name="relation" value="love"' /tmp/love.html
+          grep -q '16タイプ友達相性ガイド' /tmp/friend.html
+          grep -q '16タイプ仕事相性ガイド' /tmp/work.html
+          grep -q '16タイプ家族相性ガイド' /tmp/family.html
+          grep -q 'type16_invite_share' /tmp/growth.js
+          grep -q 'share_landing' /tmp/growth.js
+          grep -q 'relation_guide_submit' /tmp/growth.js
+          grep -q "params.set('compare'" /tmp/type16-test.js
+          grep -q 'attributedShareUrl' /tmp/share.js
+
+          python3 - <<'PY'
+          from pathlib import Path
+          home = Path('/tmp/home.html').read_text(encoding='utf-8')
+          sitemap = Path('/tmp/sitemap.xml').read_text(encoding='utf-8')
+          assert sitemap.count('<url>') == 111
+          priority = home.index('data-home-priority-version="2026-09-02"')
+          growth = home.index('data-growth-version="2026-09-02-v2"')
+          quizzes = home.index('<h2 class="section-title">タイプ診断</h2>')
+          assert priority < growth < quizzes
+          print('LIVE PASS: SEO relation guides, invite comparison, share attribution and 111 URLs verified.')
+          PY
+
+      - name: Verify IndexNow ownership key
+        run: |
+          curl -fsS --max-time 30 "$SITE_URL/$INDEXNOW_KEY.txt" | grep -qx "$INDEXNOW_KEY"
+
+      - name: Submit all 111 live URLs to IndexNow
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import xml.etree.ElementTree as ET
+
+          site_url = os.environ['SITE_URL']
+          key = os.environ['INDEXNOW_KEY']
+          root = ET.parse('/tmp/sitemap.xml').getroot()
+          urls = []
+          for element in root.iter():
+              if element.tag.endswith('loc') and element.text:
+                  url = element.text.strip()
+                  if url.startswith(site_url):
+                      urls.append(url)
+          urls = list(dict.fromkeys(urls))
+          if len(urls) != 111:
+              raise SystemExit(f'Expected 111 URLs, found {len(urls)}')
+          payload = {
+              'host': 'shindan-lab.onrender.com',
+              'key': key,
+              'keyLocation': f'{site_url}/{key}.txt',
+              'urlList': urls,
+          }
+          with open('/tmp/indexnow.json', 'w', encoding='utf-8') as handle:
+              json.dump(payload, handle, ensure_ascii=False)
+          print(f'Prepared {len(urls)} URLs for IndexNow.')
+          PY
+
+          status=$(curl -sS --max-time 60 \
+            -o /tmp/indexnow-response.txt \
+            -w '%{http_code}' \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            --data-binary @/tmp/indexnow.json \
+            https://api.indexnow.org/indexnow)
+          cat /tmp/indexnow-response.txt || true
+          if [ "$status" != '200' ] && [ "$status" != '202' ]; then
+            echo "IndexNow returned HTTP $status"
+            exit 1
+          fi
+          echo "IndexNow accepted all 111 URLs with HTTP $status."

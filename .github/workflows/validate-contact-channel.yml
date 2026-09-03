@@ -1,0 +1,42 @@
+name: Validate public contact channel
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - public/contact.html
+      - public/about.html
+      - public/editorial-policy.html
+      - public/privacy.html
+      - public/terms.html
+      - scripts/**
+      - run_tests.sh
+      - docs/**
+      - .github/workflows/validate-contact-channel.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Reject the unverified mailbox anywhere in the repository
+        run: |
+          set -euo pipefail
+          pattern="contact@""shindan24.com"
+          if grep -RIn --exclude-dir=.git -- "$pattern" .; then
+            echo 'An unverified mailbox is still published or referenced.'
+            exit 1
+          fi
+
+      - name: Verify the public issue form remains available
+        run: |
+          grep -q 'issues/new?template=site-contact.yml' public/contact.html
+          grep -q '送信内容は公開されます' public/contact.html
+          grep -q '公開フォームには個人情報を記載しないでください' .github/ISSUE_TEMPLATE/site-contact.yml

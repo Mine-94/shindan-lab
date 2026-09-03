@@ -17,7 +17,7 @@ jobs:
     env:
       SITE_URL: https://shindan24.com
     steps:
-      - name: Wait for the complete celebrity result release
+      - name: Wait for the priority celebrity release
         run: |
           set -u
           ready=0
@@ -25,7 +25,8 @@ jobs:
             curl -fsS --max-time 60 "$SITE_URL/16type/r/ISFP" -o /tmp/isfp.html || true
             if grep -q 'data-type16-celebrity-section' /tmp/isfp.html 2>/dev/null \
               && grep -q 'あなたと同じISFPタイプとして公表された有名人' /tmp/isfp.html 2>/dev/null \
-              && grep -q 'パク・ボヨン' /tmp/isfp.html 2>/dev/null \
+              && grep -q 'LISA' /tmp/isfp.html 2>/dev/null \
+              && grep -q '藤田ニコル' /tmp/isfp.html 2>/dev/null \
               && grep -q '<title>ISFPの有名人・芸能人｜性格・恋愛・仕事の16タイプ解説</title>' /tmp/isfp.html 2>/dev/null \
               && grep -q '<meta name="viewport" content="width=device-width, initial-scale=1.0"' /tmp/isfp.html 2>/dev/null; then
               ready=1
@@ -34,11 +35,11 @@ jobs:
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'The complete same-type celebrity release was not visible on shindan24.com.'
+            echo 'The priority celebrity release was not visible on shindan24.com.'
             exit 1
           fi
 
-      - name: Verify all 16 unified lists and privacy-safe visuals
+      - name: Verify all 16 unified lists and priority candidates
         run: |
           set -euo pipefail
           codes=(INTJ INTP ENTJ ENTP INFJ INFP ENFJ ENFP ISTJ ISFJ ESTJ ESFJ ISTP ISFP ESTP ESFP)
@@ -61,21 +62,40 @@ jobs:
             fi
           done
 
-          grep -q 'リュジン' /tmp/intj.html
-          grep -q 'EJ' /tmp/intj.html
-          grep -q '林瑠奈' /tmp/intj.html
-          grep -q 'パク・ソジュン' /tmp/infp.html
-          grep -q '佐々木舞香' /tmp/infp.html
-          grep -q 'ホシ' /tmp/infp.html
-          grep -q 'パク・ボヨン' /tmp/isfp.html
-          grep -q '田中樹' /tmp/isfp.html
-          grep -q 'ヨサン' /tmp/isfp.html
+          # BTS: all seven members represented by their published type.
+          grep -q 'JIN' /tmp/intp.html
+          grep -q 'JUNG KOOK' /tmp/intp.html
+          grep -q '>V<' /tmp/infp.html
+          grep -q '>RM<' /tmp/enfp.html
+          grep -q 'j-hope' /tmp/esfj.html
+          grep -q 'SUGA' /tmp/istp.html
+          grep -q 'JIMIN' /tmp/estp.html
+
+          # BLACKPINK: all four members represented in one-list type sections.
+          grep -q 'JENNIE' /tmp/infj.html
+          grep -q 'ROSÉ' /tmp/enfp.html
+          grep -q 'JISOO' /tmp/istp.html
+          grep -q 'LISA' /tmp/isfp.html
+
+          # BIGBANG: the three members who disclosed their types together in 2024.
+          grep -q 'G-DRAGON' /tmp/entp.html
+          grep -q 'TAEYANG' /tmp/infj.html
+          grep -q 'D-LITE' /tmp/isfj.html
+
+          # Recognized Japanese candidates remain visible alongside the global acts.
+          grep -q '北川景子' /tmp/infj.html
+          grep -q '大西流星' /tmp/entp.html
+          grep -q '藤原丈一郎' /tmp/enfj.html
+          grep -q '高橋恭平' /tmp/enfp.html
+          grep -q '道枝駿佑' /tmp/istp.html
+          grep -q '藤田ニコル' /tmp/isfp.html
+          grep -q '広瀬すず' /tmp/estp.html
 
           python3 - <<'PY'
           from pathlib import Path
 
           ad_url = 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'
-          for code in ('intj', 'infp', 'isfp'):
+          for code in ('intp', 'entp', 'infj', 'enfp', 'istp', 'isfp', 'estp'):
               body = Path(f'/tmp/{code}.html').read_text(encoding='utf-8', errors='replace')
               start = body.index('data-type16-celebrity-section')
               end = body.index('関連する診断', start)
@@ -83,7 +103,7 @@ jobs:
               assert '<img' not in section, f'{code}: unlicensed image markup is present'
               assert body.count(ad_url) == 1, f'{code}: public result AdSense count is wrong'
               assert '掲載情報の最終確認：2026年9月3日' in section
-          print('PASS: 16 single-list celebrity sections, SEO metadata and copyright-safe identity visuals verified.')
+          print('PASS: BTS, BIGBANG, BLACKPINK and Japanese candidates are live in unified, source-linked lists.')
           PY
 
           curl -fsS --max-time 60 "$SITE_URL/css/type16-celebrities.css" -o /tmp/celebrities.css
@@ -104,4 +124,5 @@ jobs:
             exit 1
           fi
           grep -q 'あなたと同じISFPタイプとして公表された有名人' /tmp/personalized.html
-          echo 'LIVE PASS: all 16 unified celebrity lists are deployed without category grouping.'
+          grep -q 'LISA' /tmp/personalized.html
+          echo 'LIVE PASS: priority celebrity lists are deployed without category grouping.'

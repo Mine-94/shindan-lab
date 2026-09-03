@@ -33,34 +33,33 @@ function insertBeforeFirst(html, anchor, block) {
   return `${html.slice(0, index)}${block}\n${html.slice(index)}`;
 }
 
-function replaceMetaTag(html, attribute, value, escapeHtml) {
-  const escaped = escapeHtml(value);
-  const pattern = new RegExp(`<meta ${attribute}="([^"]*)" content="[^"]*" \\/>`);
-  return String(html).replace(pattern, `<meta ${attribute}="$1" content="${escaped}" />`);
-}
-
 function withCelebrityMetadata(html, type, celebrities, escapeHtml) {
   const names = celebrities.map((person) => person.name).join('、');
   const title = `${type.code}の有名人・芸能人｜性格・恋愛・仕事の16タイプ解説`;
   const description = `${type.code}「${type.name}」の性格、恋愛、友達、仕事の傾向と、${names}など同じタイプとして公表された有名人を紹介。公式MBTI®とは別の非公式16タイプ情報です。`;
+  const escapedTitle = escapeHtml(title);
+  const escapedDescription = escapeHtml(description);
 
-  let output = String(html).replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`);
-  output = replaceMetaTag(output, 'name', description, escapeHtml);
+  let output = String(html).replace(/<title>[^<]*<\/title>/, `<title>${escapedTitle}</title>`);
+  output = output.replace(
+    /<meta name="description" content="[^"]*" \/>/,
+    `<meta name="description" content="${escapedDescription}" />`
+  );
   output = output.replace(
     /<meta property="og:title" content="[^"]*" \/>/,
-    `<meta property="og:title" content="${escapeHtml(title)}" />`
+    `<meta property="og:title" content="${escapedTitle}" />`
   );
   output = output.replace(
     /<meta property="og:description" content="[^"]*" \/>/,
-    `<meta property="og:description" content="${escapeHtml(description)}" />`
+    `<meta property="og:description" content="${escapedDescription}" />`
   );
   output = output.replace(
     /<meta name="twitter:title" content="[^"]*" \/>/,
-    `<meta name="twitter:title" content="${escapeHtml(title)}" />`
+    `<meta name="twitter:title" content="${escapedTitle}" />`
   );
   output = output.replace(
     /<meta name="twitter:description" content="[^"]*" \/>/,
-    `<meta name="twitter:description" content="${escapeHtml(description)}" />`
+    `<meta name="twitter:description" content="${escapedDescription}" />`
   );
   return output;
 }

@@ -1,5 +1,6 @@
 name: Validate public contact channel
 
+# Revision 2: the failed mailbox was removed after a real delivery test.
 on:
   push:
     branches:

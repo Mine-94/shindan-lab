@@ -1,0 +1,39 @@
+name: Enforce Japanese-only project scope
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shindan24-project-scope
+  cancel-in-progress: true
+
+jobs:
+  verify-scope:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Reject cross-project files and identifiers
+        run: node scripts/check-project-scope.js
+
+      - name: Confirm the Japanese project definition
+        run: |
+          grep -q 'しんだんラボ（shindan24.com）' docs/project-scope.md
+          grep -q '日本語版' docs/project-scope.md
+          grep -q '他プロジェクト' docs/project-scope.md
+
+      - name: Run the complete regression suite
+        run: npm test

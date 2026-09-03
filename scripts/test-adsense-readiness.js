@@ -75,7 +75,7 @@ async function main() {
     const trustPages = [
       ['/about.html', '運営者情報'],
       ['/editorial-policy.html', '広告と編集の分離'],
-      ['/contact.html', 'contact@shindan24.com'],
+      ['/contact.html', 'issues/new?template=site-contact.yml'],
       ['/privacy.html', '第三者配信事業者'],
       ['/terms.html', '禁止事項'],
     ];
@@ -101,7 +101,9 @@ async function main() {
     }
 
     const contact = await fetchPage('/contact.html');
-    assert(contact.text.includes('issues/new?template=site-contact.yml'), 'Working public contact fallback is missing');
+    assert(contact.text.includes('issues/new?template=site-contact.yml'), 'Working public contact form is missing');
+    assert(!contact.text.includes('contact@shindan24.com'), 'Unverified contact alias must not be published');
+    assert(!contact.text.includes('mailto:'), 'Contact page must not expose a non-working mail link');
     assert(!contact.text.includes('pagead2.googlesyndication.com'), 'Contact page should not load ads');
 
     const sitemap = await fetchPage('/sitemap.xml');
@@ -144,7 +146,7 @@ async function main() {
     const robots = await fetchPage('/robots.txt');
     assert(robots.text.includes('Sitemap: https://shindan24.com/sitemap.xml'), 'robots.txt sitemap is not canonical');
 
-    console.log('PASS: AdSense trust pages, privacy disclosure, 60-page sitemap, name-result noindex and real 404 handling validated.');
+    console.log('PASS: AdSense trust pages, public contact form, privacy disclosure, 60-page sitemap, name-result noindex and real 404 handling validated.');
   } finally {
     child.kill('SIGTERM');
     await new Promise((resolve) => {

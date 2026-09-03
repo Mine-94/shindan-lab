@@ -16,6 +16,15 @@ function occurrences(text, needle) {
   return String(text).split(needle).length - 1;
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function validateData() {
   assert(/^\d{4}-\d{2}-\d{2}$/.test(VERIFIED_AT), 'VERIFIED_AT must use YYYY-MM-DD');
   assert(Object.keys(TYPE16_CELEBRITIES).length === 16, 'Celebrity data must contain 16 type keys');
@@ -40,14 +49,7 @@ function validateData() {
 
 function validateRendering() {
   const fakeOriginal = {
-    escapeHtml(value) {
-      return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    },
+    escapeHtml,
     renderType16Result(code) {
       return `<!doctype html><html><head></head><body><main><h1>${code}</h1><section class="info-card">\n      <h2>関連する診断</h2><p>links</p></section></main></body></html>`;
     },
@@ -70,8 +72,8 @@ function validateRendering() {
     assert(!html.includes('海外の有名人'), `${code}: country category heading must not appear`);
 
     for (const person of people) {
-      assert(html.includes(person.name), `${code}: missing celebrity ${person.name}`);
-      assert(html.includes(person.affiliation), `${code}: missing affiliation for ${person.name}`);
+      assert(html.includes(escapeHtml(person.name)), `${code}: missing celebrity ${person.name}`);
+      assert(html.includes(escapeHtml(person.affiliation)), `${code}: missing affiliation for ${person.name}`);
       assert(html.includes(person.sourceUrl), `${code}: missing source for ${person.name}`);
     }
   }

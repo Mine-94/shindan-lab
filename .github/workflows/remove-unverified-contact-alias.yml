@@ -1,0 +1,72 @@
+name: Remove unverified contact alias
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/remove-unverified-contact-alias.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shindan-lab-contact-remediation
+  cancel-in-progress: false
+
+jobs:
+  remediate-test-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Remove the failed mailbox from source and tests
+        run: python3 scripts/remove_unverified_contact_alias.py
+
+      - name: Validate source syntax
+        run: |
+          python3 -m py_compile scripts/remove_unverified_contact_alias.py scripts/apply_adsense_readiness.py
+          node --check scripts/test-adsense-readiness.js
+
+      - name: Run shell regression tests
+        run: bash run_tests.sh
+
+      - name: Run all packaged tests and content audit
+        run: npm test
+
+      - name: Confirm the public contact page is truthful
+        run: |
+          pattern="contact@""shindan24.com"
+          if grep -RIn --exclude-dir=.git --exclude-dir=.github -- "$pattern" .; then
+            echo 'The failed mailbox remains outside workflow history.'
+            exit 1
+          fi
+          grep -q 'issues/new?template=site-contact.yml' public/contact.html
+          grep -q '送信内容は公開されます' public/contact.html
+          if grep -q 'mailto:' public/contact.html; then
+            echo 'A mailto link remains on the public contact page.'
+            exit 1
+          fi
+
+      - name: Commit only tested remediation changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            run_tests.sh \
+            scripts/test-adsense-readiness.js \
+            scripts/apply_adsense_readiness.py \
+            docs/adsense-approval-readiness-2026-09-02.md
+          if git diff --cached --quiet; then
+            echo 'Contact remediation is already current.'
+            exit 0
+          fi
+          git commit -m "Remove failed public contact mailbox references"
+          git push origin main

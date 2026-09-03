@@ -16,6 +16,8 @@ const { createGrowthRenderers } = require('./views/growth-render');
 Object.assign(originalRender, createGrowthRenderers({ ...originalRender }));
 const { createAdsenseContentRenderers } = require('./views/adsense-content-render');
 Object.assign(originalRender, createAdsenseContentRenderers({ ...originalRender }));
+const { createType16CelebrityRenderers } = require('./views/type16-celebrity-render');
+Object.assign(originalRender, createType16CelebrityRenderers({ ...originalRender }));
 const {
   renderHome,
   renderQuizPage,

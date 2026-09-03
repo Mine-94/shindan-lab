@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "node scripts/test-adsense-ux.js && node scripts/test-adsense-content-depth.js && node scripts/audit-adsense-content.js && node scripts/test-adsense-readiness.js && node scripts/test-social-previews.js && node scripts/test-growth.js && node scripts/test-type16-share.js && node scripts/test-home-priority.js && node scripts/test-type16.js && node scripts/test-quality.js"
+    "test": "node scripts/test-type16-celebrities.js && node scripts/test-adsense-ux.js && node scripts/test-adsense-content-depth.js && node scripts/audit-adsense-content.js && node scripts/test-adsense-readiness.js && node scripts/test-social-previews.js && node scripts/test-growth.js && node scripts/test-type16-share.js && node scripts/test-home-priority.js && node scripts/test-type16.js && node scripts/test-quality.js"
   },
   "engines": {
     "node": ">=18.0.0"

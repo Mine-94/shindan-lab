@@ -51,7 +51,7 @@ function validateRendering() {
   const fakeOriginal = {
     escapeHtml,
     renderType16Result(code) {
-      return `<!doctype html><html><head></head><body><main><h1>${code}</h1><section class="info-card">\n      <h2>関連する診断</h2><p>links</p></section></main></body></html>`;
+      return `<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${code} old title</title><meta name="description" content="old description" /><meta property="og:title" content="old title" /><meta property="og:description" content="old description" /><meta name="twitter:title" content="old title" /><meta name="twitter:description" content="old description" /></head><body><main><h1>${code}</h1><section class="info-card">\n      <h2>関連する診断</h2><p>links</p></section></main></body></html>`;
     },
   };
 
@@ -70,6 +70,10 @@ function validateRendering() {
     assert(!html.includes('日本の有名人'), `${code}: country category heading must not appear`);
     assert(!html.includes('韓国の有名人'), `${code}: country category heading must not appear`);
     assert(!html.includes('海外の有名人'), `${code}: country category heading must not appear`);
+    assert(html.includes('<meta name="viewport" content="width=device-width, initial-scale=1.0" />'), `${code}: viewport metadata changed`);
+    assert(html.includes(`<title>${code}の有名人・芸能人｜性格・恋愛・仕事の16タイプ解説</title>`), `${code}: SEO title is missing`);
+    assert(html.includes('<meta name="description" content="'), `${code}: description metadata is missing`);
+    assert(html.includes('同じタイプとして公表された有名人を紹介'), `${code}: celebrity description is missing`);
 
     for (const person of people) {
       assert(html.includes(escapeHtml(person.name)), `${code}: missing celebrity ${person.name}`);
@@ -81,4 +85,4 @@ function validateRendering() {
 
 validateData();
 validateRendering();
-console.log('PASS: 16 unified same-type celebrity lists, 48 sourced entries and no category grouping validated.');
+console.log('PASS: 16 unified same-type celebrity lists, 48 sourced entries, SEO metadata and no category grouping validated.');

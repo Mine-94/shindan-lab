@@ -1,4 +1,4 @@
-name: Diagnose live AdSense readiness
+name: Verify live AdSense UX readiness
 
 on:
   push:
@@ -12,27 +12,24 @@ permissions:
   contents: read
 
 jobs:
-  diagnose:
+  verify-live:
     runs-on: ubuntu-latest
     env:
       SITE_URL: https://shindan24.com
+      ADSENSE_CLIENT: ca-pub-8602848692420724
     steps:
-      - name: Wait until the content-depth release is live
+      - name: Wait until the 2026-09-03 UX release is live
         run: |
           set -u
           ready=0
           for attempt in $(seq 1 36); do
             curl -fsS --max-time 60 "$SITE_URL/" -o /tmp/home.html || true
-            curl -fsS --max-time 60 "$SITE_URL/q/oshikatsu-type" -o /tmp/quiz.html || true
-            curl -fsS --max-time 60 "$SITE_URL/shichuu/r/kinoe" -o /tmp/stem.html || true
-            curl -fsS --max-time 60 "$SITE_URL/ketsueki/r/A" -o /tmp/blood.html || true
-            curl -fsS --max-time 60 "$SITE_URL/meimei" -o /tmp/meimei.html || true
+            curl -fsS --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml || true
 
-            if grep -q 'data-content-depth="home-h1"' /tmp/home.html 2>/dev/null \
-              && grep -q 'data-content-depth="quiz-oshikatsu-type"' /tmp/quiz.html 2>/dev/null \
-              && grep -q 'data-content-depth="stem-kinoe"' /tmp/stem.html 2>/dev/null \
-              && grep -q 'data-content-depth="blood-A"' /tmp/blood.html 2>/dev/null \
-              && grep -q 'data-content-depth="meimei-guide"' /tmp/meimei.html 2>/dev/null; then
+            if grep -q 'aria-label="主要メニュー"' /tmp/home.html 2>/dev/null \
+              && grep -q 'class="content-review container"' /tmp/home.html 2>/dev/null \
+              && grep -q '最終確認：2026年9月3日' /tmp/home.html 2>/dev/null \
+              && [ "$(grep -o '<lastmod>2026-09-03</lastmod>' /tmp/sitemap.xml 2>/dev/null | wc -l | tr -d ' ')" = '60' ]; then
               ready=1
               break
             fi
@@ -40,51 +37,112 @@ jobs:
           done
 
           if [ "$ready" -ne 1 ]; then
-            echo 'The AdSense content-depth release was not visible on shindan24.com.'
+            echo 'The latest AdSense UX release was not visible on shindan24.com.'
             exit 1
           fi
-          echo 'The AdSense content-depth release is visible.'
+          echo 'The latest AdSense UX release is visible.'
 
-      - name: Verify live trust, depth, index controls and contact routing
+      - name: Verify public content, private results and technical readiness
         run: |
           set -euo pipefail
-          curl -fsS --max-time 60 "$SITE_URL/" -o /tmp/home.html
-          curl -fsS --max-time 60 "$SITE_URL/q/oshikatsu-type" -o /tmp/quiz.html
-          curl -fsS --max-time 60 "$SITE_URL/shichuu/r/kinoe" -o /tmp/stem.html
-          curl -fsS --max-time 60 "$SITE_URL/ketsueki/r/A" -o /tmp/blood.html
-          curl -fsS --max-time 60 "$SITE_URL/ketsueki" -o /tmp/ketsueki.html
-          curl -fsS --max-time 60 "$SITE_URL/meimei" -o /tmp/meimei.html
-          curl -fsS --max-time 60 "$SITE_URL/about.html" -o /tmp/about.html
-          curl -fsS --max-time 60 "$SITE_URL/contact.html" -o /tmp/contact.html
-          curl -fsS --max-time 60 "$SITE_URL/privacy.html" -o /tmp/privacy.html
+
+          curl -fsS --max-time 60 -D /tmp/home.headers "$SITE_URL/" -o /tmp/home.html
+          curl -fsS --max-time 60 -D /tmp/quiz.headers "$SITE_URL/q/honto-no-seikaku" -o /tmp/quiz.html
+          curl -fsS --max-time 60 -D /tmp/compat-landing.headers "$SITE_URL/16type/compatibility" -o /tmp/compat-landing.html
+          curl -fsS --max-time 60 -D /tmp/privacy.headers "$SITE_URL/privacy.html" -o /tmp/privacy.html
+          curl -fsS --max-time 60 -D /tmp/css.headers "$SITE_URL/css/style.css" -o /tmp/style.css
           curl -fsS --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
-          curl -fsSI --max-time 60 "$SITE_URL/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A" -o /tmp/name-headers.txt
-          missing_status=$(curl -sS --max-time 60 -o /tmp/404.html -w '%{http_code}' "$SITE_URL/adsense-readiness-missing-page")
+          curl -fsS --max-time 60 "$SITE_URL/ads.txt" -o /tmp/ads.txt
 
-          grep -q '<h1 class="home-main-title"' /tmp/home.html
-          grep -q '表示される結果' /tmp/quiz.html
-          grep -q '同じ五行の陰陽との違い' /tmp/stem.html
-          grep -q '疲れやすい場面と整え方' /tmp/blood.html
-          grep -q '血液型占いをどう使う？' /tmp/ketsueki.html
-          grep -q '入力した名前と結果URLについて' /tmp/meimei.html
-          grep -q '運営者情報' /tmp/about.html
-          grep -q 'contact@shindan24.com' /tmp/contact.html
-          grep -q '第三者配信事業者' /tmp/privacy.html
-          grep -qi '^x-robots-tag:.*noindex' /tmp/name-headers.txt
+          curl -fsS --max-time 60 -D /tmp/scored.headers \
+            "$SITE_URL/q/oshikatsu-type/r/kamiseki?s=75" -o /tmp/scored.html
+          curl -fsS --max-time 60 -D /tmp/invite.headers \
+            "$SITE_URL/16type/test?compare=ENFP&relation=friend&utm_source=invite" -o /tmp/invite.html
+          curl -fsS --max-time 60 -D /tmp/type-result.headers \
+            "$SITE_URL/16type/r/ENFP?e=80&s=20&t=20&j=20" -o /tmp/type-result.html
+          curl -fsS --max-time 60 -D /tmp/compat-result.headers \
+            "$SITE_URL/16type/compatibility?self=ENFP&partner=ISTJ&relation=friend" -o /tmp/compat-result.html
+          curl -fsS --max-time 60 -D /tmp/name.headers \
+            "$SITE_URL/meimei/r/%E4%BD%90%E8%97%A4/%E6%B9%8A" -o /tmp/name.html
+
+          missing_status=$(curl -sS --max-time 60 -D /tmp/missing.headers \
+            -o /tmp/missing.html -w '%{http_code}' "$SITE_URL/adsense-ux-missing-page")
+          www_status=$(curl -sS --max-time 60 -D /tmp/www.headers \
+            -o /dev/null -w '%{http_code}' 'https://www.shindan24.com/16type?from=www-test')
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          ad_url = 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'
+          publisher = 'ca-pub-8602848692420724'
+
+          def text(path):
+              return Path(path).read_text(encoding='utf-8', errors='replace')
+
+          def headers(path):
+              return text(path).lower()
+
+          for label, body_path, header_path in (
+              ('home', '/tmp/home.html', '/tmp/home.headers'),
+              ('quiz landing', '/tmp/quiz.html', '/tmp/quiz.headers'),
+              ('compatibility landing', '/tmp/compat-landing.html', '/tmp/compat-landing.headers'),
+          ):
+              body = text(body_path)
+              hdr = headers(header_path)
+              assert body.count(ad_url) == 1, f'{label}: AdSense loader count is {body.count(ad_url)}'
+              assert publisher in body, f'{label}: publisher ID missing'
+              assert 'aria-label="主要メニュー"' in body, f'{label}: global navigation missing'
+              assert 'href="/contact.html"' in body, f'{label}: contact link missing'
+              assert 'fonts.googleapis.com' not in body, f'{label}: remote Google Fonts remain'
+              assert 'referrer-policy: strict-origin-when-cross-origin' in hdr, f'{label}: referrer header missing'
+              assert 'content-language: ja' in hdr, f'{label}: language header missing'
+
+          for label, body_path, header_path in (
+              ('scored quiz result', '/tmp/scored.html', '/tmp/scored.headers'),
+              ('invitation test', '/tmp/invite.html', '/tmp/invite.headers'),
+              ('personalized type result', '/tmp/type-result.html', '/tmp/type-result.headers'),
+              ('selected compatibility result', '/tmp/compat-result.html', '/tmp/compat-result.headers'),
+              ('name result', '/tmp/name.html', '/tmp/name.headers'),
+          ):
+              body = text(body_path)
+              hdr = headers(header_path)
+              assert ad_url not in body, f'{label}: AdSense loader must be removed'
+              assert 'x-robots-tag: noindex, follow' in hdr, f'{label}: noindex header missing'
+              assert 'cache-control: private, no-store' in hdr, f'{label}: private no-store missing'
+
+          privacy = text('/tmp/privacy.html')
+          privacy_headers = headers('/tmp/privacy.headers')
+          assert ad_url not in privacy, 'privacy page contains an ad tag'
+          assert 'fonts.googleapis.com' not in privacy, 'privacy page loads Google Fonts'
+          assert 'name="referrer" content="strict-origin-when-cross-origin"' in privacy
+          assert 'aria-label="主要メニュー"' in privacy
+          assert 'referrer-policy: strict-origin-when-cross-origin' in privacy_headers
+
+          css_headers = headers('/tmp/css.headers')
+          assert 'cache-control: public, max-age=3600' in css_headers, css_headers
+
+          sitemap = text('/tmp/sitemap.xml')
+          assert sitemap.count('<url>') == 60
+          assert sitemap.count('<lastmod>2026-09-03</lastmod>') == 60
+          assert '/meimei/r/' not in sitemap
+          assert 'shindan-lab.onrender.com' not in sitemap
+
+          ads = text('/tmp/ads.txt').strip()
+          assert ads == 'google.com, pub-8602848692420724, DIRECT, f08c47fec0942fa0'
+
+          home = text('/tmp/home.html')
+          assert 'class="content-review container"' in home
+          assert '最終確認：2026年9月3日' in home
+
+          print('LIVE PASS: AdSense eligibility, privacy, navigation, caching, noindex inventory and sitemap metadata verified.')
+          PY
+
           [ "$missing_status" = '404' ]
-          grep -q 'ページが見つかりません' /tmp/404.html
+          grep -qi '^x-robots-tag:.*noindex' /tmp/missing.headers
+          grep -q 'ページが見つかりません' /tmp/missing.html
 
-          url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
-          [ "$url_count" = '60' ]
-          grep -q "$SITE_URL/contact.html</loc>" /tmp/sitemap.xml
-          if grep -q '/meimei/r/' /tmp/sitemap.xml; then
-            echo 'Thin name-result URLs remain in sitemap.'
-            exit 1
-          fi
-
-          for file in home quiz stem blood ketsueki meimei; do
-            grep -q '/css/adsense-content.css' "/tmp/$file.html"
-          done
+          [ "$www_status" = '301' ]
+          grep -qi '^location: https://shindan24.com/16type?from=www-test' /tmp/www.headers
 
           curl -fsS --max-time 30 'https://dns.google/resolve?name=shindan24.com&type=MX' -o /tmp/mx.json
           python3 - <<'PY'
@@ -98,4 +156,4 @@ jobs:
           print(f'MX PASS: {answers}')
           PY
 
-          echo 'LIVE PASS: original content depth, trust pages, 60 reviewed URLs, noindexed name results, real 404 and MX routing verified.'
+          echo 'LIVE PASS: the 2026-09-03 AdSense UX hardening release is fully deployed.'

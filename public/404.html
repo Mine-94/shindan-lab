@@ -6,6 +6,7 @@
   <title>ページが見つかりません｜しんだんラボ</title>
   <meta name="description" content="指定されたページは見つかりませんでした。URLを確認するか、しんだんラボのホームから診断を選んでください。" />
   <meta name="author" content="しんだんラボ編集部" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta name="robots" content="noindex, follow, max-image-preview:large" />
   <link rel="canonical" href="https://shindan24.com/404.html" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -24,10 +25,7 @@
   <meta name="twitter:title" content="ページが見つかりません｜しんだんラボ" />
   <meta name="twitter:description" content="指定されたページは見つかりませんでした。URLを確認するか、しんだんラボのホームから診断を選んでください。" />
   <meta name="twitter:image" content="https://shindan24.com/og/default.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css" />
+        <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/quality.css" />
   <script type="application/ld+json">
   {
@@ -53,7 +51,17 @@
 <body>
   <header class="site-header">
     <div class="container">
-      <a href="/" class="logo">しんだんラボ</a>
+      <div class="site-header-row">
+        <a href="/" class="logo">しんだんラボ</a>
+        <nav class="site-nav" aria-label="主要メニュー">
+          <a href="/16type">16タイプ</a>
+          <a href="/16type/compatibility">相性</a>
+          <a href="/q/honto-no-seikaku">心理テスト</a>
+          <a href="/ketsueki">占い</a>
+          <a href="/about.html">運営情報</a>
+          <a href="/contact.html">お問い合わせ</a>
+        </nav>
+      </div>
     </div>
   </header>
   <main class="container">

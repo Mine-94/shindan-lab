@@ -12,7 +12,7 @@
 
 body {
   margin: 0;
-  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
@@ -506,4 +506,65 @@ main { padding-bottom: 40px; }
   .trust-definition-list > div { grid-template-columns: 1fr; gap: 5px; }
   .contact-actions { flex-direction: column; }
   .contact-actions .quiz-btn { width: 100%; min-width: 0; }
+}
+
+
+/* ADSENSE_UX_2026_09_03 */
+.site-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 14px;
+}
+
+.site-nav a {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-nav a:hover { color: var(--ink); }
+
+.content-review {
+  margin-top: 8px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.content-review p {
+  margin: 3px 0;
+  font-size: 0.78rem;
+}
+
+.content-review a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .site-header-row { flex-direction: column; }
+  .site-nav { justify-content: center; }
+  .site-nav a { font-size: 0.8rem; }
 }

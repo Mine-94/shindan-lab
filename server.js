@@ -38,24 +38,55 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const ADSENSE_PUBLISHER_ID = (process.env.ADSENSE_CLIENT_ID || 'ca-pub-8602848692420724').replace(/^ca-/, '');
 const LEGACY_HOST = 'shindan-lab.onrender.com';
+const CANONICAL_HOST = 'shindan24.com';
+const SITEMAP_LASTMOD = '2026-09-03';
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 300, // 静的リソース(css/js)もこのリミッターを通過するため、1ページ閲覧だけで複数リクエストを消費します。
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(limiter);
 
-// 検索シグナルがRenderの既定アドレスと公式ドメインに分かれないよう一本化します。
+app.set('trust proxy', 1);
+
+// Googleの欧州規制メッセージがクロスオリジンの参照元を確認できる設定を明示します。
 app.use((req, res, next) => {
-  if (String(req.hostname || '').toLowerCase() === LEGACY_HOST) {
+  res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.set('Content-Language', 'ja');
+  next();
+});
+
+// 旧Render URLとwwwを一つの公式ドメインへ恒久転送します。
+app.use((req, res, next) => {
+  const hostname = String(req.hostname || '').toLowerCase();
+  if (hostname === LEGACY_HOST || hostname === `www.${CANONICAL_HOST}`) {
     return res.redirect(301, `${SITE_URL}${req.originalUrl}`);
   }
   next();
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+// 画像・CSS・JSは短時間キャッシュし、HTMLは更新確認を早くします。
+app.use(
+  express.static(path.join(__dirname, 'public'), {
+    etag: true,
+    lastModified: true,
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('service-worker.js')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      } else if (/\.(?:css|js|png|ico|json)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=300');
+      }
+    },
+  })
+);
+
+// 静的アセットを除くアプリ画面だけにレート制限を適用します。
+app.use(limiter);
 
 // AdSenseの販売者情報をルート直下のtext/plainで返します。
 // catch-allリダイレクトより先に定義しないと、Googleが確認できません。
@@ -69,7 +100,24 @@ function findQuiz(id) {
   return quizzes.find((q) => q.id === id);
 }
 
+function stripAdSenseLoader(html) {
+  return String(html).replace(
+    /<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=[^"]+" crossorigin="anonymous"><\/script>\n?/g,
+    ''
+  );
+}
+
+function sendRendered(res, html, { noindex = false, allowAds = true } = {}) {
+  if (noindex) {
+    res.set('X-Robots-Tag', 'noindex, follow');
+    res.set('Cache-Control', 'private, no-store');
+  }
+  return res.send(allowAds ? html : stripAdSenseLoader(html));
+}
+
 function sendNotFound(res) {
+  res.set('X-Robots-Tag', 'noindex, follow');
+  res.set('Cache-Control', 'no-store');
   return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 }
 
@@ -127,9 +175,10 @@ app.get('/sitemap.xml', (req, res) => {
   ];
 
   const urls = allPaths
-    .map((p) => `  <url><loc>${SITE_URL}${p}</loc></url>`)
+    .map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${SITEMAP_LASTMOD}</lastmod></url>`)
     .join('\n');
   res.type('application/xml');
+  res.set('Cache-Control', 'public, max-age=3600');
   res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`);
 });
 
@@ -147,7 +196,10 @@ app.get('/q/:id/r/:resultKey', (req, res) => {
   // 値がない・範囲外の場合は静かに無視し、従来通りにレンダリング(canonical URLはそのまま維持)。
   const scoreRaw = parseInt(req.query.s, 10);
   const matchScore = Number.isInteger(scoreRaw) && scoreRaw >= 0 && scoreRaw <= 100 ? scoreRaw : null;
-  res.send(renderResultPage(quiz, req.params.resultKey, matchScore));
+  return sendRendered(res, renderResultPage(quiz, req.params.resultKey, matchScore), {
+    noindex: matchScore !== null,
+    allowAds: matchScore === null,
+  });
 });
 
 // --- 16タイプ診断・相性チェック（公式MBTIとは別の独自コンテンツ） ---
@@ -156,7 +208,11 @@ app.get('/16type', (req, res) => {
 });
 
 app.get('/16type/test', (req, res) => {
-  res.send(renderType16Test(req.query));
+  const personalized = Object.keys(req.query).length > 0;
+  return sendRendered(res, renderType16Test(req.query), {
+    noindex: personalized,
+    allowAds: !personalized,
+  });
 });
 
 app.get('/16type/love', (req, res) => {
@@ -178,11 +234,19 @@ app.get('/16type/family', (req, res) => {
 app.get('/16type/r/:code', (req, res) => {
   const code = normalizeType16Code(req.params.code);
   if (!TYPE16_CODES.includes(code)) return sendNotFound(res);
-  res.send(renderType16Result(code, req.query));
+  const personalized = Object.keys(req.query).length > 0;
+  return sendRendered(res, renderType16Result(code, req.query), {
+    noindex: personalized,
+    allowAds: !personalized,
+  });
 });
 
 app.get('/16type/compatibility', (req, res) => {
-  res.send(renderType16Compatibility(req.query));
+  const hasResult = Boolean(req.query.self && req.query.partner);
+  return sendRendered(res, renderType16Compatibility(req.query), {
+    noindex: hasResult,
+    allowAds: !hasResult,
+  });
 });
 
 // --- 簡易四柱推命（十干タイプ診断） ---
@@ -278,9 +342,11 @@ app.get('/meimei/r/:sei/:mei', (req, res) => {
   const sei = decodeURIComponent(req.params.sei);
   const mei = decodeURIComponent(req.params.mei);
   const calcResult = calcSeimeiHandan(sei, mei);
-  // 任意入力の名前結果は利用者向け機能として残し、検索用の大量ページにはしません。
-  res.set('X-Robots-Tag', 'noindex, follow');
-  res.send(renderMeimeiResult(sei, mei, calcResult));
+  // 任意入力の名前結果は検索対象・広告対象にせず、利用者向け計算結果としてだけ表示します。
+  return sendRendered(res, renderMeimeiResult(sei, mei, calcResult), {
+    noindex: true,
+    allowAds: false,
+  });
 });
 
 // 不明なURLをホームへ転送するとsoft 404になり得るため、正しい404を返します。

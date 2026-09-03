@@ -16,7 +16,9 @@ const configuredSiteUrl = (process.env.SITE_URL || OFFICIAL_SITE_URL).replace(/\
 // Renderに古い既定アドレスが環境変数として残っていても、canonical・sitemapは公式ドメインを使用します。
 const SITE_URL = configuredSiteUrl === 'https://shindan-lab.onrender.com' ? OFFICIAL_SITE_URL : configuredSiteUrl;
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION || '';
-const ADSENSE_CLIENT_ID = process.env.ADSENSE_CLIENT_ID || ''; // 例: ca-pub-8602848692420724
+const ADSENSE_CLIENT_ID = /^ca-pub-\d+$/.test(process.env.ADSENSE_CLIENT_ID || '')
+  ? process.env.ADSENSE_CLIENT_ID
+  : 'ca-pub-8602848692420724';
 const AFFILIATE_URL = /^https?:\/\//.test(process.env.AFFILIATE_URL || '')
   ? process.env.AFFILIATE_URL
   : '';
@@ -54,6 +56,7 @@ function baseLayout({ title, description, ogUrl, ogImage, bodyClass, content, th
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <meta name="author" content="しんだんラボ編集部" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta name="robots" content="max-image-preview:large" />
 <link rel="canonical" href="${escapeHtml(ogUrl)}" />
 ${GOOGLE_SITE_VERIFICATION ? `<meta name="google-site-verification" content="${escapeHtml(GOOGLE_SITE_VERIFICATION)}" />` : ''}
@@ -75,9 +78,6 @@ ${GOOGLE_SITE_VERIFICATION ? `<meta name="google-site-verification" content="${e
 <meta name="twitter:image" content="${escapeHtml(socialImage)}" />
 <meta name="twitter:image:alt" content="${escapeHtml(`${title}｜${SITE_NAME}`)}" />
 ${themeColor ? `<meta name="theme-color" content="${themeColor}" />` : ''}
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/css/style.css" />
 ${GA_MEASUREMENT_ID ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${escapeHtml(GA_MEASUREMENT_ID)}"></script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n  gtag('config', ${JSON.stringify(GA_MEASUREMENT_ID)});\n</script>` : ''}
 ${ADSENSE_CLIENT_ID ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${escapeHtml(ADSENSE_CLIENT_ID)}" crossorigin="anonymous"></script>` : ''}
@@ -85,6 +85,10 @@ ${structuredData ? `<script type="application/ld+json">${safeJsonLd(structuredDa
 </head>
 <body class="${bodyClass || ''}">
 ${content}
+<section class="content-review container" aria-label="編集情報">
+  <p>内容確認：しんだんラボ編集部（最終確認：2026年9月3日）</p>
+  <p><a href="/editorial-policy.html">制作・確認方法</a><span aria-hidden="true"> · </span><a href="/contact.html">訂正を連絡する</a></p>
+</section>
 <footer class="site-footer">
   <div class="container">
     <p class="disclaimer">当サイトの診断・占いコンテンツはエンタメ目的であり、公式の心理検査・医学的診断・専門家による鑑定の代わりになるものではありません。血液型と性格の関連性、姓名判断・四柱推命の的中性は科学的に証明されたものではありません。</p>
@@ -147,7 +151,17 @@ function affiliateSlot() {
 }
 
 function siteHeaderNav() {
-  return `<a href="/" class="logo">しんだんラボ</a>`;
+  return `<div class="site-header-row">
+    <a href="/" class="logo">しんだんラボ</a>
+    <nav class="site-nav" aria-label="主要メニュー">
+      <a href="/16type">16タイプ</a>
+      <a href="/16type/compatibility">相性</a>
+      <a href="/q/honto-no-seikaku">心理テスト</a>
+      <a href="/ketsueki">占い</a>
+      <a href="/about.html">運営情報</a>
+      <a href="/contact.html">お問い合わせ</a>
+    </nav>
+  </div>`;
 }
 
 // ---------------------------------------------------------------------------

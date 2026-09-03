@@ -1,0 +1,119 @@
+/* しんだんラボ — 16タイプ結果の同タイプ有名人一覧 */
+
+.type16-celebrity-section {
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.type16-celebrity-section > h2 {
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+}
+
+.type16-celebrity-section > p:not(.content-kicker):not(.small-note) {
+  margin: 0;
+  line-height: 1.85;
+}
+
+.type16-celebrity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.type16-celebrity-card {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e7e1ee;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(51, 42, 72, 0.05);
+}
+
+.type16-celebrity-visual {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  border: 1px solid rgba(111, 92, 215, 0.18);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.8), transparent 28%),
+    linear-gradient(145deg, #eee9ff, #d9cef9);
+  color: #51428f;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  text-align: center;
+}
+
+.type16-celebrity-visual span {
+  max-width: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.type16-celebrity-copy {
+  min-width: 0;
+}
+
+.type16-celebrity-copy h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.98rem;
+  line-height: 1.4;
+}
+
+.type16-celebrity-copy p {
+  margin: 3px 0 8px;
+  color: #6f6877;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.type16-celebrity-copy a {
+  color: #6651bd;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.type16-celebrity-copy a:hover,
+.type16-celebrity-copy a:focus-visible {
+  color: #3f2a99;
+}
+
+.type16-celebrity-section .small-note {
+  margin: 16px 0 0;
+}
+
+@media (max-width: 820px) {
+  .type16-celebrity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .type16-celebrity-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .type16-celebrity-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .type16-celebrity-visual {
+    width: 64px;
+    height: 64px;
+  }
+}

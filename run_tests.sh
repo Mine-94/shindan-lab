@@ -100,7 +100,8 @@ check_contains "ads.txt 販売者情報" "$BASE/ads.txt" "google.com, pub-860284
 check_contains "robots.txt sitemapリンク" "$BASE/robots.txt" "Sitemap:"
 check_status "sitemap.xml" "$BASE/sitemap.xml" 200
 check_status "お問い合わせ" "$BASE/contact.html" 200
-check_contains "お問い合わせに連絡方法" "$BASE/contact.html" "contact@shindan24.com"
+check_contains "お問い合わせに公開フォーム" "$BASE/contact.html" "site-contact.yml"
+check_not_contains "未確認メールアドレスを公開しない" "$BASE/contact.html" "mailto:"
 check_status "存在しないURLは正しい404" "$BASE/this-page-does-not-exist" 404
 check_contains "sitemapに/shichuu含む" "$BASE/sitemap.xml" "/shichuu</loc>"
 check_contains "sitemapに/ketsueki含む" "$BASE/sitemap.xml" "/ketsueki</loc>"

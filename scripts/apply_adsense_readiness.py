@@ -433,12 +433,11 @@ def contact_page() -> str:
 
     <section class="info-card site-guide">
       <h2>連絡方法</h2>
+      <p>現在は、下記の公開問い合わせフォームで受け付けています。フォームの利用にはGitHubアカウントへのログインが必要です。</p>
       <div class="contact-actions">
-        <a class="quiz-btn" href="mailto:contact@shindan24.com?subject=%E3%81%97%E3%82%93%E3%81%A0%E3%82%93%E3%83%A9%E3%83%9C%E3%81%B8%E3%81%AE%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B">メールで問い合わせる</a>
-        <a class="quiz-btn quiz-btn-outline" href="https://github.com/Mine-94/shindan-lab/issues/new?template=site-contact.yml" target="_blank" rel="noopener noreferrer">公開問い合わせフォームを開く</a>
+        <a class="quiz-btn" href="https://github.com/Mine-94/shindan-lab/issues/new?template=site-contact.yml" target="_blank" rel="noopener noreferrer">公開問い合わせフォームを開く</a>
       </div>
-      <p><strong>メール：</strong><a href="mailto:contact@shindan24.com">contact@shindan24.com</a></p>
-      <p class="small-note">メールが利用できない場合は、GitHubの公開問い合わせフォームをご利用ください。公開フォームには氏名、住所、電話番号、メールアドレス、診断に入力した本名などを書かないでください。</p>
+      <p class="small-note">送信内容は公開されます。氏名、住所、電話番号、メールアドレス、診断に入力した本名、本人確認書類などの個人情報は書かないでください。</p>
     </section>
 
     <section class="info-card site-guide">
@@ -748,7 +747,7 @@ def patch_run_tests() -> None:
         addition = (
             anchor
             + 'check_status "お問い合わせ" "$BASE/contact.html" 200\n'
-            + 'check_contains "お問い合わせに連絡方法" "$BASE/contact.html" "contact@shindan24.com"\n'
+            + 'check_contains "お問い合わせに公開フォーム" "$BASE/contact.html" "site-contact.yml"\n'
             + 'check_status "存在しないURLは正しい404" "$BASE/this-page-does-not-exist" 404\n'
         )
         text = replace_once(text, anchor, addition, "basic AdSense pages tests")
@@ -860,7 +859,7 @@ async function main() {
     const trustPages = [
       ['/about.html', '運営者情報'],
       ['/editorial-policy.html', '広告と編集の分離'],
-      ['/contact.html', 'contact@shindan24.com'],
+      ['/contact.html', 'issues/new?template=site-contact.yml'],
       ['/privacy.html', '第三者配信事業者'],
       ['/terms.html', '禁止事項'],
     ];
@@ -1065,7 +1064,7 @@ jobs:
           grep -q '運営・編集：しんだんラボ編集部' /tmp/home.html
           grep -q '運営者情報' /tmp/about.html
           grep -q '広告と編集の分離' /tmp/policy.html
-          grep -q 'contact@shindan24.com' /tmp/contact.html
+          grep -q 'issues/new?template=site-contact.yml' /tmp/contact.html
           grep -q '第三者配信事業者' /tmp/privacy.html
           grep -q '禁止事項' /tmp/terms.html
           grep -qi '^x-robots-tag:.*noindex' /tmp/name-headers.txt
@@ -1148,7 +1147,7 @@ def approval_doc() -> str:
 
 ## 재신청 전에 사람이 확인할 항목
 
-1. `contact@shindan24.com`이 실제로 수신되는지 확인하거나 전달 주소를 설정한다.
+1. 공개 문의 양식이 정상적으로 열리고 개인정보 경고가 표시되는지 확인한다.
 2. AdSense의 개인정보 보호 및 메시지에서 EEA·영국·스위스용 Google 인증 CMP 메시지를 설정한다.
 3. Render에 최신 main 커밋을 배포한다.
 4. 라이브 검증 워크플로를 수동 실행한다.
@@ -1186,7 +1185,7 @@ def main() -> None:
         "server.js": ["'/contact.html'", "X-Robots-Tag", "sendNotFound", "status(404)"],
         "views/render.js": ["しんだんラボ編集部", 'href="/contact.html"'],
         "public/privacy.html": ["第三者配信事業者", "Google広告設定", "ウェブビーコン"],
-        "public/contact.html": ["contact@shindan24.com", "site-contact.yml"],
+        "public/contact.html": ["issues/new?template=site-contact.yml", "送信内容は公開されます"],
         "package.json": ["test-adsense-readiness.js"],
     }
     for path, markers in assertions.items():

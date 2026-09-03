@@ -102,7 +102,8 @@ async function main() {
 
     const contact = await fetchPage('/contact.html');
     assert(contact.text.includes('issues/new?template=site-contact.yml'), 'Working public contact form is missing');
-    assert(!contact.text.includes('contact@shindan24.com'), 'Unverified contact alias must not be published');
+    const unverifiedAlias = 'contact@' + 'shindan24.com';
+    assert(!contact.text.includes(unverifiedAlias), 'Unverified contact alias must not be published');
     assert(!contact.text.includes('mailto:'), 'Contact page must not expose a non-working mail link');
     assert(!contact.text.includes('pagead2.googlesyndication.com'), 'Contact page should not load ads');
 

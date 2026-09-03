@@ -20,6 +20,12 @@ function safeHttpsUrl(value) {
   }
 }
 
+function formatJapaneseDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
+  if (!match) return String(value);
+  return `${Number(match[1])}年${Number(match[2])}月${Number(match[3])}日`;
+}
+
 function insertBeforeFirst(html, anchor, block) {
   const index = String(html).indexOf(anchor);
   if (index === -1) throw new Error(`Missing celebrity insertion anchor: ${anchor}`);
@@ -71,11 +77,11 @@ function celebritySectionHtml(typeCode, celebrities, escapeHtml) {
       <p class="content-kicker">SAME TYPE</p>
       <h2 id="same-type-celebrities-${escapeHtml(typeCode)}">あなたと同じ${escapeHtml(
         typeCode
-      )}として公表された有名人</h2>
+      )}タイプとして公表された有名人</h2>
       <p>本人または公式コンテンツで4文字タイプが公表されたことを確認できる人物を、国や活動分野で分けずに一つの一覧で紹介しています。</p>
       <div class="type16-celebrity-grid">${cards}</div>
       <p class="small-note">同じ4文字タイプでも、性格・価値観・生き方が同じという意味ではありません。タイプは再診断や公表時期によって変わることがあります。掲載情報の最終確認：${escapeHtml(
-        VERIFIED_AT.replace(/-/g, '年').replace('年09年', '年9月').replace('年03', '月3日')
+        formatJapaneseDate(VERIFIED_AT)
       )}</p>
     </section>`;
 }

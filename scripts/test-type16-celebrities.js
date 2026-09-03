@@ -59,7 +59,7 @@ function validateRendering() {
     const people = getType16Celebrities(code);
 
     assert(html.includes('data-type16-celebrity-section'), `${code}: celebrity section is missing`);
-    assert(html.includes(`あなたと同じ${code}として公表された有名人`), `${code}: heading is wrong`);
+    assert(html.includes(`あなたと同じ${code}タイプとして公表された有名人`), `${code}: heading is wrong`);
     assert(occurrences(html, 'class="type16-celebrity-grid"') === 1, `${code}: must render one unified celebrity list`);
     assert(occurrences(html, 'class="type16-celebrity-card"') === 3, `${code}: must render 3 celebrity cards`);
     assert(occurrences(html, '/css/type16-celebrities.css') === 1, `${code}: celebrity CSS must appear once`);

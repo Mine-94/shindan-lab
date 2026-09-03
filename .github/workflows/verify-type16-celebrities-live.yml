@@ -1,0 +1,102 @@
+name: Verify live same-type celebrity lists
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-type16-celebrities-live.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: https://shindan24.com
+    steps:
+      - name: Wait for the celebrity result release
+        run: |
+          set -u
+          ready=0
+          for attempt in $(seq 1 36); do
+            curl -fsS --max-time 60 "$SITE_URL/16type/r/ISFP" -o /tmp/isfp.html || true
+            if grep -q 'data-type16-celebrity-section' /tmp/isfp.html 2>/dev/null \
+              && grep -q 'あなたと同じISFPタイプとして公表された有名人' /tmp/isfp.html 2>/dev/null \
+              && grep -q 'パク・ボヨン' /tmp/isfp.html 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'The same-type celebrity release was not visible on shindan24.com.'
+            exit 1
+          fi
+
+      - name: Verify all 16 unified lists and privacy-safe visuals
+        run: |
+          set -euo pipefail
+          codes=(INTJ INTP ENTJ ENTP INFJ INFP ENFJ ENFP ISTJ ISFJ ESTJ ESFJ ISTP ISFP ESTP ESFP)
+
+          for code in "${codes[@]}"; do
+            lower=$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]')
+            curl -fsS --max-time 60 -D "/tmp/${lower}.headers" "$SITE_URL/16type/r/$code" -o "/tmp/${lower}.html"
+            grep -q "あなたと同じ${code}タイプとして公表された有名人" "/tmp/${lower}.html"
+            [ "$(grep -o 'class="type16-celebrity-card"' "/tmp/${lower}.html" | wc -l | tr -d ' ')" = '3' ]
+            [ "$(grep -o 'class="type16-celebrity-grid"' "/tmp/${lower}.html" | wc -l | tr -d ' ')" = '1' ]
+            grep -q '/css/type16-celebrities.css' "/tmp/${lower}.html"
+            grep -q '/js/type16-celebrities.js' "/tmp/${lower}.html"
+            grep -q 'rel="nofollow noopener noreferrer"' "/tmp/${lower}.html"
+            if grep -Eq '日本の有名人|韓国の有名人|海外の有名人' "/tmp/${lower}.html"; then
+              echo "$code contains a forbidden country/category heading."
+              exit 1
+            fi
+          done
+
+          grep -q 'リュジン' /tmp/intj.html
+          grep -q 'EJ' /tmp/intj.html
+          grep -q '林瑠奈' /tmp/intj.html
+          grep -q 'パク・ソジュン' /tmp/infp.html
+          grep -q '佐々木舞香' /tmp/infp.html
+          grep -q 'ホシ' /tmp/infp.html
+          grep -q 'パク・ボヨン' /tmp/isfp.html
+          grep -q '田中樹' /tmp/isfp.html
+          grep -q 'ヨサン' /tmp/isfp.html
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          ad_url = 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'
+          for code in ('intj', 'infp', 'isfp'):
+              body = Path(f'/tmp/{code}.html').read_text(encoding='utf-8', errors='replace')
+              start = body.index('data-type16-celebrity-section')
+              end = body.index('関連する診断', start)
+              section = body[start:end]
+              assert '<img' not in section, f'{code}: unlicensed image markup is present'
+              assert body.count(ad_url) == 1, f'{code}: public result AdSense count is wrong'
+              assert '掲載情報の最終確認：2026年9月3日' in section
+          print('PASS: 16 single-list celebrity sections and copyright-safe identity visuals verified.')
+          PY
+
+          curl -fsS --max-time 60 "$SITE_URL/css/type16-celebrities.css" -o /tmp/celebrities.css
+          curl -fsS --max-time 60 "$SITE_URL/js/type16-celebrities.js" -o /tmp/celebrities.js
+          grep -q '.type16-celebrity-grid' /tmp/celebrities.css
+          grep -q 'type16_celebrity_section_view' /tmp/celebrities.js
+          grep -q 'type16_celebrity_source_click' /tmp/celebrities.js
+
+      - name: Verify personalized results remain private and ad-free
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 60 -D /tmp/personalized.headers \
+            "$SITE_URL/16type/r/ISFP?e=20&s=80&t=20&j=20" -o /tmp/personalized.html
+          grep -qi '^x-robots-tag:.*noindex' /tmp/personalized.headers
+          grep -qi '^cache-control:.*private.*no-store' /tmp/personalized.headers
+          if grep -q 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js' /tmp/personalized.html; then
+            echo 'Personalized result unexpectedly contains the AdSense loader.'
+            exit 1
+          fi
+          grep -q 'あなたと同じISFPタイプとして公表された有名人' /tmp/personalized.html
+          echo 'LIVE PASS: all 16 unified celebrity lists are deployed without category grouping.'

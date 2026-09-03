@@ -1,6 +1,6 @@
 name: Validate public contact channel
 
-# Revision 2: the failed mailbox was removed after a real delivery test.
+# Revision 3: validate the exact privacy warning used by the issue form.
 on:
   push:
     branches:
@@ -40,4 +40,5 @@ jobs:
         run: |
           grep -q 'issues/new?template=site-contact.yml' public/contact.html
           grep -q '送信内容は公開されます' public/contact.html
-          grep -q '公開フォームには個人情報を記載しないでください' .github/ISSUE_TEMPLATE/site-contact.yml
+          grep -q 'このフォームの内容は公開されます' .github/ISSUE_TEMPLATE/site-contact.yml
+          grep -q '個人情報を書かないでください' .github/ISSUE_TEMPLATE/site-contact.yml

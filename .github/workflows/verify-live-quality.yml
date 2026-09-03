@@ -28,7 +28,12 @@ jobs:
           grep -q '運営・編集：しんだんラボ編集部' /tmp/home.html
           grep -q '運営者情報' /tmp/about.html
           grep -q '広告と編集の分離' /tmp/policy.html
-          grep -q 'contact@shindan24.com' /tmp/contact.html
+          grep -q 'issues/new?template=site-contact.yml' /tmp/contact.html
+          grep -q '送信内容は公開されます' /tmp/contact.html
+          if grep -q 'mailto:' /tmp/contact.html; then
+            echo 'The live contact page still exposes an unverified mail link.'
+            exit 1
+          fi
           grep -q '第三者配信事業者' /tmp/privacy.html
           grep -q '禁止事項' /tmp/terms.html
           grep -qi '^x-robots-tag:.*noindex' /tmp/name-headers.txt
@@ -46,4 +51,4 @@ jobs:
             echo 'Legacy hostname remains in live trust or sitemap content.'
             exit 1
           fi
-          echo 'LIVE PASS: trust pages, privacy disclosure, 60 reviewed URLs, noindexed name results and real 404 verified.'
+          echo 'LIVE PASS: trust pages, public contact form, privacy disclosure, 60 reviewed URLs, noindexed name results and real 404 verified.'

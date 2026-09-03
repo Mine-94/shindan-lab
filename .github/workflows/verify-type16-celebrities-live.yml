@@ -17,7 +17,7 @@ jobs:
     env:
       SITE_URL: https://shindan24.com
     steps:
-      - name: Wait for the celebrity result release
+      - name: Wait for the complete celebrity result release
         run: |
           set -u
           ready=0
@@ -25,14 +25,16 @@ jobs:
             curl -fsS --max-time 60 "$SITE_URL/16type/r/ISFP" -o /tmp/isfp.html || true
             if grep -q 'data-type16-celebrity-section' /tmp/isfp.html 2>/dev/null \
               && grep -q 'あなたと同じISFPタイプとして公表された有名人' /tmp/isfp.html 2>/dev/null \
-              && grep -q 'パク・ボヨン' /tmp/isfp.html 2>/dev/null; then
+              && grep -q 'パク・ボヨン' /tmp/isfp.html 2>/dev/null \
+              && grep -q '<title>ISFPの有名人・芸能人｜性格・恋愛・仕事の16タイプ解説</title>' /tmp/isfp.html 2>/dev/null \
+              && grep -q '<meta name="viewport" content="width=device-width, initial-scale=1.0"' /tmp/isfp.html 2>/dev/null; then
               ready=1
               break
             fi
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'The same-type celebrity release was not visible on shindan24.com.'
+            echo 'The complete same-type celebrity release was not visible on shindan24.com.'
             exit 1
           fi
 
@@ -45,6 +47,9 @@ jobs:
             lower=$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]')
             curl -fsS --max-time 60 -D "/tmp/${lower}.headers" "$SITE_URL/16type/r/$code" -o "/tmp/${lower}.html"
             grep -q "あなたと同じ${code}タイプとして公表された有名人" "/tmp/${lower}.html"
+            grep -q "<title>${code}の有名人・芸能人｜性格・恋愛・仕事の16タイプ解説</title>" "/tmp/${lower}.html"
+            grep -q '<meta name="viewport" content="width=device-width, initial-scale=1.0"' "/tmp/${lower}.html"
+            grep -q '同じタイプとして公表された有名人を紹介' "/tmp/${lower}.html"
             [ "$(grep -o 'class="type16-celebrity-card"' "/tmp/${lower}.html" | wc -l | tr -d ' ')" = '3' ]
             [ "$(grep -o 'class="type16-celebrity-grid"' "/tmp/${lower}.html" | wc -l | tr -d ' ')" = '1' ]
             grep -q '/css/type16-celebrities.css' "/tmp/${lower}.html"
@@ -78,7 +83,7 @@ jobs:
               assert '<img' not in section, f'{code}: unlicensed image markup is present'
               assert body.count(ad_url) == 1, f'{code}: public result AdSense count is wrong'
               assert '掲載情報の最終確認：2026年9月3日' in section
-          print('PASS: 16 single-list celebrity sections and copyright-safe identity visuals verified.')
+          print('PASS: 16 single-list celebrity sections, SEO metadata and copyright-safe identity visuals verified.')
           PY
 
           curl -fsS --max-time 60 "$SITE_URL/css/type16-celebrities.css" -o /tmp/celebrities.css

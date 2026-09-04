@@ -6,6 +6,12 @@ on:
       - main
     paths:
       - .github/workflows/enable-type16-celebrities.yml
+      - data/type16-celebrities.js
+      - views/type16-celebrity-render.js
+      - public/css/type16-celebrities.css
+      - public/js/type16-celebrities.js
+      - scripts/test-type16-celebrities.js
+      - scripts/enable_type16_celebrities.py
   workflow_dispatch:
 
 permissions:
@@ -39,7 +45,7 @@ jobs:
           node --check scripts/test-type16-celebrities.js
           node --check server.js
 
-      - name: Validate all 16 unified lists
+      - name: Validate result lists and searchable 48-person directory
         run: node scripts/test-type16-celebrities.js
 
       - name: Run full shell regression suite
@@ -54,8 +60,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add server.js package.json
           if git diff --cached --quiet; then
-            echo 'Same-type celebrity integration is already current.'
+            echo 'Celebrity discovery integration is already current.'
             exit 0
           fi
-          git commit -m "Show sourced same-type celebrities on 16-type results"
+          git commit -m "Show searchable celebrity discovery on the 16-type hub"
           git push origin main

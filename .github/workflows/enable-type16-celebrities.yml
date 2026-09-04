@@ -6,12 +6,6 @@ on:
       - main
     paths:
       - .github/workflows/enable-type16-celebrities.yml
-      - data/type16-celebrities.js
-      - views/type16-celebrity-render.js
-      - public/css/type16-celebrities.css
-      - public/js/type16-celebrities.js
-      - scripts/test-type16-celebrities.js
-      - scripts/enable_type16_celebrities.py
   workflow_dispatch:
 
 permissions:

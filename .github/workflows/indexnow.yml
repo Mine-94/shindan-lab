@@ -1,6 +1,11 @@
 name: Submit reviewed Japanese pages to IndexNow
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/indexnow.yml
   workflow_dispatch:
 
 permissions:

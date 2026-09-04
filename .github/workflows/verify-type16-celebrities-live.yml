@@ -1,4 +1,4 @@
-name: Verify live same-type celebrity lists
+name: Verify live same-type celebrity discovery
 
 on:
   push:
@@ -17,100 +17,98 @@ jobs:
     env:
       SITE_URL: https://shindan24.com
     steps:
-      - name: Wait for the priority celebrity release
+      - name: Wait for the searchable celebrity discovery release
         run: |
           set -u
           ready=0
           for attempt in $(seq 1 36); do
-            curl -fsS --max-time 60 "$SITE_URL/16type/r/ISFP" -o /tmp/isfp.html || true
-            if grep -q 'data-type16-celebrity-section' /tmp/isfp.html 2>/dev/null \
-              && grep -q 'あなたと同じISFPタイプとして公表された有名人' /tmp/isfp.html 2>/dev/null \
-              && grep -q 'LISA' /tmp/isfp.html 2>/dev/null \
-              && grep -q '藤田ニコル' /tmp/isfp.html 2>/dev/null \
-              && grep -q '<title>ISFPの有名人・芸能人｜性格・恋愛・仕事の16タイプ解説</title>' /tmp/isfp.html 2>/dev/null \
-              && grep -q '<meta name="viewport" content="width=device-width, initial-scale=1.0"' /tmp/isfp.html 2>/dev/null; then
+            curl -fsS --max-time 60 "$SITE_URL/" -o /tmp/home.html || true
+            curl -fsS --max-time 60 "$SITE_URL/16type" -o /tmp/hub.html || true
+            if grep -q 'data-type16-celebrity-home-teaser' /tmp/home.html 2>/dev/null \
+              && grep -q 'data-type16-celebrity-directory' /tmp/hub.html 2>/dev/null \
+              && grep -q '推し・有名人から16タイプを探す' /tmp/hub.html 2>/dev/null \
+              && grep -q '<title>16タイプ性格一覧・有名人｜BTS・BLACKPINK・無料診断</title>' /tmp/hub.html 2>/dev/null \
+              && [ "$(grep -o 'class="type16-celebrity-directory-card"' /tmp/hub.html 2>/dev/null | wc -l | tr -d ' ')" = '48' ]; then
               ready=1
               break
             fi
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'The priority celebrity release was not visible on shindan24.com.'
+            echo 'The searchable celebrity discovery release was not visible on shindan24.com.'
             exit 1
           fi
 
-      - name: Verify all 16 unified lists and priority candidates
+      - name: Verify homepage discovery CTA and the single 48-person directory
         run: |
           set -euo pipefail
-          codes=(INTJ INTP ENTJ ENTP INFJ INFP ENFJ ENFP ISTJ ISFJ ESTJ ESFJ ISTP ISFP ESTP ESFP)
+          curl -fsS --max-time 60 "$SITE_URL/" -o /tmp/home.html
+          curl -fsS --max-time 60 -D /tmp/hub.headers "$SITE_URL/16type" -o /tmp/hub.html
+          curl -fsS --max-time 60 "$SITE_URL/css/type16-celebrities.css" -o /tmp/celebrities.css
+          curl -fsS --max-time 60 "$SITE_URL/js/type16-celebrities.js" -o /tmp/celebrities.js
+          curl -fsS --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
 
-          for code in "${codes[@]}"; do
-            lower=$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]')
-            curl -fsS --max-time 60 -D "/tmp/${lower}.headers" "$SITE_URL/16type/r/$code" -o "/tmp/${lower}.html"
-            grep -q "あなたと同じ${code}タイプとして公表された有名人" "/tmp/${lower}.html"
-            grep -q "<title>${code}の有名人・芸能人｜性格・恋愛・仕事の16タイプ解説</title>" "/tmp/${lower}.html"
-            grep -q '<meta name="viewport" content="width=device-width, initial-scale=1.0"' "/tmp/${lower}.html"
-            grep -q '同じタイプとして公表された有名人を紹介' "/tmp/${lower}.html"
-            [ "$(grep -o 'class="type16-celebrity-card"' "/tmp/${lower}.html" | wc -l | tr -d ' ')" = '3' ]
-            [ "$(grep -o 'class="type16-celebrity-grid"' "/tmp/${lower}.html" | wc -l | tr -d ' ')" = '1' ]
-            grep -q '/css/type16-celebrities.css' "/tmp/${lower}.html"
-            grep -q '/js/type16-celebrities.js' "/tmp/${lower}.html"
-            grep -q 'rel="nofollow noopener noreferrer"' "/tmp/${lower}.html"
-            if grep -Eq '日本の有名人|韓国の有名人|海外の有名人' "/tmp/${lower}.html"; then
-              echo "$code contains a forbidden country/category heading."
-              exit 1
-            fi
+          grep -q 'data-type16-celebrity-home-teaser' /tmp/home.html
+          grep -q '/16type#celebrity-directory' /tmp/home.html
+          grep -q 'BTS、BIGBANG、BLACKPINK' /tmp/home.html
+          grep -q 'data-type16-celebrity-search' /tmp/hub.html
+          grep -q 'data-type16-celebrity-toggle' /tmp/hub.html
+          grep -q '名前・グループ名・4文字タイプで検索' /tmp/hub.html
+          grep -q '公表済み有名人48人を一つの一覧で紹介' /tmp/hub.html
+          [ "$(grep -o 'class="type16-celebrity-directory-card"' /tmp/hub.html | wc -l | tr -d ' ')" = '48' ]
+          [ "$(grep -o 'class="type16-celebrity-directory-grid is-collapsed"' /tmp/hub.html | wc -l | tr -d ' ')" = '1' ]
+          [ "$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')" = '60' ]
+          grep -q "$SITE_URL/16type</loc>" /tmp/sitemap.xml
+
+          # Priority names requested for Japanese acquisition appear in the same directory.
+          for name in JIN 'JUNG KOOK' V RM j-hope SUGA JIMIN JENNIE ROSÉ JISOO LISA G-DRAGON TAEYANG D-LITE 北川景子 広瀬すず 大西流星 道枝駿佑 高橋恭平 藤田ニコル; do
+            grep -q "$name" /tmp/hub.html
           done
 
-          # BTS: all seven members represented by their published type.
-          grep -q 'JIN' /tmp/intp.html
-          grep -q 'JUNG KOOK' /tmp/intp.html
-          grep -q '>V<' /tmp/infp.html
-          grep -q '>RM<' /tmp/enfp.html
-          grep -q 'j-hope' /tmp/esfj.html
-          grep -q 'SUGA' /tmp/istp.html
-          grep -q 'JIMIN' /tmp/estp.html
+          if grep -Eq '日本の有名人|韓国の有名人|海外の有名人' /tmp/hub.html; then
+            echo 'The hub contains a forbidden country/category heading.'
+            exit 1
+          fi
 
-          # BLACKPINK: all four members represented in one-list type sections.
-          grep -q 'JENNIE' /tmp/infj.html
-          grep -q 'ROSÉ' /tmp/enfp.html
-          grep -q 'JISOO' /tmp/istp.html
-          grep -q 'LISA' /tmp/isfp.html
-
-          # BIGBANG: the three members who disclosed their types together in 2024.
-          grep -q 'G-DRAGON' /tmp/entp.html
-          grep -q 'TAEYANG' /tmp/infj.html
-          grep -q 'D-LITE' /tmp/isfj.html
-
-          # Recognized Japanese candidates remain visible alongside the global acts.
-          grep -q '北川景子' /tmp/infj.html
-          grep -q '大西流星' /tmp/entp.html
-          grep -q '藤原丈一郎' /tmp/enfj.html
-          grep -q '高橋恭平' /tmp/enfp.html
-          grep -q '道枝駿佑' /tmp/istp.html
-          grep -q '藤田ニコル' /tmp/isfp.html
-          grep -q '広瀬すず' /tmp/estp.html
+          grep -q '.type16-celebrity-directory-grid' /tmp/celebrities.css
+          grep -q '.type16-celebrity-home-teaser' /tmp/celebrities.css
+          grep -q 'type16_celebrity_directory_view' /tmp/celebrities.js
+          grep -q 'type16_celebrity_directory_search' /tmp/celebrities.js
+          grep -q 'type16_celebrity_profile_click' /tmp/celebrities.js
+          grep -q 'query_length' /tmp/celebrities.js
 
           python3 - <<'PY'
           from pathlib import Path
 
           ad_url = 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'
-          for code in ('intp', 'entp', 'infj', 'enfp', 'istp', 'isfp', 'estp'):
-              body = Path(f'/tmp/{code}.html').read_text(encoding='utf-8', errors='replace')
-              start = body.index('data-type16-celebrity-section')
-              end = body.index('関連する診断', start)
-              section = body[start:end]
-              assert '<img' not in section, f'{code}: unlicensed image markup is present'
-              assert body.count(ad_url) == 1, f'{code}: public result AdSense count is wrong'
-              assert '掲載情報の最終確認：2026年9月3日' in section
-          print('PASS: BTS, BIGBANG, BLACKPINK and Japanese candidates are live in unified, source-linked lists.')
+          home = Path('/tmp/home.html').read_text(encoding='utf-8', errors='replace')
+          hub = Path('/tmp/hub.html').read_text(encoding='utf-8', errors='replace')
+          start = hub.index('data-type16-celebrity-directory')
+          end = hub.index('type16-disclaimer', start)
+          directory = hub[start:end]
+
+          assert home.index('data-type16-celebrity-home-teaser') > home.index('/js/home-priority.js')
+          assert directory.count('class="type16-celebrity-directory-card"') == 48
+          assert directory.count('data-type16-celebrity-profile') == 48
+          assert directory.count('data-type16-celebrity-source') == 48
+          assert '<img' not in directory, 'Unlicensed celebrity image markup is present'
+          assert hub.count(ad_url) == 1, 'Public hub must load AdSense exactly once'
+          assert '<meta name="viewport" content="width=device-width, initial-scale=1.0"' in hub
+          print('PASS: homepage CTA and one searchable, source-linked 48-person directory are live.')
           PY
 
-          curl -fsS --max-time 60 "$SITE_URL/css/type16-celebrities.css" -o /tmp/celebrities.css
-          curl -fsS --max-time 60 "$SITE_URL/js/type16-celebrities.js" -o /tmp/celebrities.js
-          grep -q '.type16-celebrity-grid' /tmp/celebrities.css
-          grep -q 'type16_celebrity_section_view' /tmp/celebrities.js
-          grep -q 'type16_celebrity_source_click' /tmp/celebrities.js
+      - name: Verify all 16 result lists remain intact
+        run: |
+          set -euo pipefail
+          codes=(INTJ INTP ENTJ ENTP INFJ INFP ENFJ ENFP ISTJ ISFJ ESTJ ESFJ ISTP ISFP ESTP ESFP)
+          for code in "${codes[@]}"; do
+            lower=$(printf '%s' "$code" | tr '[:upper:]' '[:lower:]')
+            curl -fsS --max-time 60 "$SITE_URL/16type/r/$code" -o "/tmp/${lower}.html"
+            grep -q "あなたと同じ${code}タイプとして公表された有名人" "/tmp/${lower}.html"
+            [ "$(grep -o 'class="type16-celebrity-card"' "/tmp/${lower}.html" | wc -l | tr -d ' ')" = '3' ]
+            grep -q "<title>${code}の有名人・芸能人｜性格・恋愛・仕事の16タイプ解説</title>" "/tmp/${lower}.html"
+          done
+          echo 'PASS: all 16 same-type result lists remain available.'
 
       - name: Verify personalized results remain private and ad-free
         run: |
@@ -124,5 +122,4 @@ jobs:
             exit 1
           fi
           grep -q 'あなたと同じISFPタイプとして公表された有名人' /tmp/personalized.html
-          grep -q 'LISA' /tmp/personalized.html
-          echo 'LIVE PASS: priority celebrity lists are deployed without category grouping.'
+          echo 'LIVE PASS: celebrity discovery and all result pages are deployed without category grouping.'

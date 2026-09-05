@@ -117,3 +117,14 @@ npm start
 - GA4: `relation_guide_view`、`relation_guide_submit`、`type16_invite_share`、`share_landing`、`type16_comparison_click`
 
 256組の薄い相性ページは生成せず、検索意図が明確で十分な独自説明を持つ4つの関係ガイドだけをインデックス対象にしています。
+
+
+### 검색엔진 소유 확인 환경변수
+
+홈페이지 `<head>`에 소유 확인 메타태그를 출력하려면 Render 환경변수에 각 서비스가 발급한 `content` 값만 등록합니다.
+
+- `GOOGLE_SITE_VERIFICATION`: Google Search Console의 `google-site-verification` 값
+- `NAVER_SITE_VERIFICATION`: Naver Search Advisor의 `naver-site-verification` 값
+- `BING_SITE_VERIFICATION`: Bing Webmaster Tools의 `msvalidate.01` 값
+
+값을 등록하지 않으면 해당 메타태그는 출력되지 않습니다. 사이트맵은 `https://shindan24.com/sitemap.xml`을 제출하며, 개인 이름·점수·초대 조건이 포함된 `noindex` 결과 URL은 제출하지 않습니다.

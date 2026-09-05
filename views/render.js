@@ -15,7 +15,9 @@ const OFFICIAL_SITE_URL = 'https://shindan24.com';
 const configuredSiteUrl = (process.env.SITE_URL || OFFICIAL_SITE_URL).replace(/\/+$/, '');
 // Renderに古い既定アドレスが環境変数として残っていても、canonical・sitemapは公式ドメインを使用します。
 const SITE_URL = configuredSiteUrl === 'https://shindan-lab.onrender.com' ? OFFICIAL_SITE_URL : configuredSiteUrl;
-const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION || '';
+const GOOGLE_SITE_VERIFICATION = (process.env.GOOGLE_SITE_VERIFICATION || '').trim();
+const NAVER_SITE_VERIFICATION = (process.env.NAVER_SITE_VERIFICATION || '').trim();
+const BING_SITE_VERIFICATION = (process.env.BING_SITE_VERIFICATION || '').trim();
 const ADSENSE_CLIENT_ID = /^ca-pub-\d+$/.test(process.env.ADSENSE_CLIENT_ID || '')
   ? process.env.ADSENSE_CLIENT_ID
   : 'ca-pub-8602848692420724';
@@ -60,6 +62,8 @@ function baseLayout({ title, description, ogUrl, ogImage, bodyClass, content, th
 <meta name="robots" content="max-image-preview:large" />
 <link rel="canonical" href="${escapeHtml(ogUrl)}" />
 ${GOOGLE_SITE_VERIFICATION ? `<meta name="google-site-verification" content="${escapeHtml(GOOGLE_SITE_VERIFICATION)}" />` : ''}
+${NAVER_SITE_VERIFICATION ? `<meta name="naver-site-verification" content="${escapeHtml(NAVER_SITE_VERIFICATION)}" />` : ''}
+${BING_SITE_VERIFICATION ? `<meta name="msvalidate.01" content="${escapeHtml(BING_SITE_VERIFICATION)}" />` : ''}
 <meta property="og:type" content="website" />
 <meta property="og:locale" content="ja_JP" />
 <meta property="og:site_name" content="${escapeHtml(SITE_NAME)}" />

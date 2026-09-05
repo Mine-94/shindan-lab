@@ -1,0 +1,66 @@
+name: Apply actual Japanese visual redesign
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enable-actual-visual-refresh.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shindan24-actual-visual-refresh
+  cancel-in-progress: false
+
+jobs:
+  migrate-test-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply the actual site redesign
+        run: python3 scripts/apply_visual_refresh_2026_09_05.py
+
+      - name: Validate source syntax
+        run: |
+          python3 -m py_compile scripts/apply_visual_refresh_2026_09_05.py
+          node --check server.js
+          node --check views/visual-refresh-render.js
+          node --check scripts/test-visual-refresh.js
+          node --check scripts/test-quality.js
+
+      - name: Test the redesigned pages first
+        run: node scripts/test-visual-refresh.js
+
+      - name: Run the full shell regression suite
+        run: bash run_tests.sh
+
+      - name: Run all packaged tests and content audits
+        run: npm test
+
+      - name: Commit only the fully tested production changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            server.js \
+            package.json \
+            run_tests.sh \
+            scripts/test-quality.js \
+            public/*.html \
+            public/guide/*.html
+          if git diff --cached --quiet; then
+            echo 'The actual visual redesign is already integrated.'
+            exit 0
+          fi
+          git commit -m "Redesign shindan24 with a premium Japanese editorial system"
+          git push origin main

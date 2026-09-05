@@ -1,5 +1,6 @@
 name: Apply actual Japanese visual redesign
 
+# Revision 2: skip token-only search-engine verification files.
 on:
   push:
     branches:

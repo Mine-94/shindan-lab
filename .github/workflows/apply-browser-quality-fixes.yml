@@ -1,6 +1,6 @@
 name: Apply browser quality audit fixes
 
-# Revision 3: also apply the human screenshot review for title rhythm and mobile navigation.
+# Revision 4: stack the hero correctly on tablet and balance all seven mobile menu links.
 on:
   push:
     branches:

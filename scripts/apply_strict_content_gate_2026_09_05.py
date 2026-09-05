@@ -13,13 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "scripts" / "audit-adsense-content.js"
 MARKER = "STRICT_INDEXABLE_CONTENT_GATE_2026_09_05"
-
-
-def replace_once(text: str, old: str, new: str, label: str) -> str:
-    count = text.count(old)
-    if count != 1:
-        raise RuntimeError(f"Expected exactly one {label}, found {count}")
-    return text.replace(old, new, 1)
+START_ANCHOR = "    const hardFailures = pages.filter((page) =>"
+END_ANCHOR = "    console.log('\\nPASS: all 66 sitemap pages have 200 status, title, H1, canonical official host and no duplicate AdSense loader.');"
 
 
 def main() -> None:
@@ -28,15 +23,14 @@ def main() -> None:
         print("Strict indexable-content gate is already enabled.")
         return
 
-    old = """    const hardFailures = pages.filter((page) =>
-      page.status !== 200 ||
-      !page.title ||
-      !page.h1 ||
-      !page.canonical.startsWith(OFFICIAL) ||
-      page.adLoaders > 1
-    );
-    assert(hardFailures.length === 0, `Hard page-quality failures: ${hardFailures.map((page) => page.path).join(', ')}`);
-    console.log('\nPASS: all 66 sitemap pages have 200 status, title, H1, canonical official host and no duplicate AdSense loader.');"""
+    start = text.find(START_ANCHOR)
+    end_start = text.find(END_ANCHOR, start if start >= 0 else 0)
+    if start < 0 or end_start < 0:
+        raise RuntimeError(
+            "Could not locate the existing content-audit assertion block. "
+            f"start={start}, end={end_start}"
+        )
+    end = end_start + len(END_ANCHOR)
 
     new = f"""    // {MARKER}
     // These are internal release rules, not Google-published approval thresholds.
@@ -72,13 +66,10 @@ def main() -> None:
         .join(' | ')}}`
     );
     console.log(
-      '\nPASS: all 66 sitemap pages satisfy status, metadata, navigation, content-depth, uniqueness and AdSense-loader gates.'
+      '\\nPASS: all 66 sitemap pages satisfy status, metadata, navigation, content-depth, uniqueness and AdSense-loader gates.'
     );"""
 
-    TARGET.write_text(
-        replace_once(text, old, new, "content-audit release assertion block"),
-        encoding="utf-8",
-    )
+    TARGET.write_text(f"{text[:start]}{new}{text[end:]}", encoding="utf-8")
 
     updated = TARGET.read_text(encoding="utf-8")
     required = (

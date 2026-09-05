@@ -41,7 +41,25 @@ const PORT = process.env.PORT || 3000;
 const ADSENSE_PUBLISHER_ID = (process.env.ADSENSE_CLIENT_ID || 'ca-pub-8602848692420724').replace(/^ca-/, '');
 const LEGACY_HOST = 'shindan-lab.onrender.com';
 const CANONICAL_HOST = 'shindan24.com';
-const SITEMAP_LASTMOD = '2026-09-03';
+const DEFAULT_SITEMAP_LASTMOD = '2026-09-03';
+const CURRENT_CONTENT_LASTMOD = '2026-09-05';
+const CURRENT_CONTENT_PATHS = new Set([
+  '/',
+  '/16type',
+  '/guide/',
+  '/guide/16type.html',
+  '/guide/compatibility.html',
+  '/guide/fortune.html',
+  '/updates.html',
+  '/sitemap.html',
+]);
+
+function sitemapLastmod(pathname) {
+  if (CURRENT_CONTENT_PATHS.has(pathname) || pathname.startsWith('/16type/r/')) {
+    return CURRENT_CONTENT_LASTMOD;
+  }
+  return DEFAULT_SITEMAP_LASTMOD;
+}
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -149,6 +167,12 @@ app.get('/sitemap.xml', (req, res) => {
     '/16type/work',
     '/16type/family',
     ...TYPE16_CODES.map((code) => `/16type/r/${code}`),
+    '/guide/',
+    '/guide/16type.html',
+    '/guide/compatibility.html',
+    '/guide/fortune.html',
+    '/updates.html',
+    '/sitemap.html',
     '/about.html',
     '/editorial-policy.html',
     '/contact.html',
@@ -177,7 +201,7 @@ app.get('/sitemap.xml', (req, res) => {
   ];
 
   const urls = allPaths
-    .map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${SITEMAP_LASTMOD}</lastmod></url>`)
+    .map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${sitemapLastmod(p)}</lastmod></url>`)
     .join('\n');
   res.type('application/xml');
   res.set('Cache-Control', 'public, max-age=3600');

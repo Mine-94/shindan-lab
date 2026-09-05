@@ -72,6 +72,8 @@ async function main() {
     assert(home.response.status === 200, 'Home did not return 200');
     assert(home.text.includes('しんだんラボについて'), 'Home explanation is missing');
     assert(home.text.includes('目的から診断を選ぶ'), 'Home guide is missing');
+    assert(home.text.includes('使い方・結果の読み方'), 'Home usage-guide section is missing');
+    assert(home.text.includes('href="/guide/"'), 'Home guide link is missing');
     assert(home.text.includes('16タイプ・MBTI関連'), 'Home 16-type section is missing');
     assert(home.text.includes('関係から相性を探す'), 'Home relation guide section is missing');
 
@@ -201,9 +203,12 @@ async function main() {
       'Editorial policy is missing from sitemap'
     );
     const urlCount = (sitemap.text.match(/<url>/g) || []).length;
-    assert(urlCount === 60, `Unexpected reviewed sitemap URL count: ${urlCount}`);
+    assert(urlCount === 66, `Unexpected 66-page reviewed sitemap URL count: ${urlCount}`);
     assert(sitemap.text.includes('/contact.html</loc>'), 'Contact page is missing from sitemap');
     assert(!sitemap.text.includes('/meimei/r/'), 'Thin name-result URLs remain in sitemap');
+    assert(sitemap.text.includes('/guide/16type.html</loc>'), '16-type guide is missing from sitemap');
+    assert(sitemap.text.includes('/updates.html</loc>'), 'Update history is missing from sitemap');
+    assert(sitemap.text.includes('/sitemap.html</loc>'), 'HTML sitemap is missing from XML sitemap');
 
     console.log(`PASS: ${quizzes.length} quizzes and all result pages passed quality checks.`);
     console.log('PASS: home, trust pages, 16-type pages, structured data, HTML and sitemap checks passed.');

@@ -142,6 +142,18 @@ function homeContentBlock() {
       </div>
     </section>
 
+    <section class="info-card site-guide" aria-labelledby="home-guide-links">
+      <p class="content-kicker">HOW TO USE</p>
+      <h2 id="home-guide-links">使い方・結果の読み方</h2>
+      <p>どの診断を選ぶか迷う方、16タイプの4つの軸や相性点数の意味を確認したい方、姓名判断・十干・血液型占いの計算範囲を知りたい方のために、テーマ別の案内を用意しています。</p>
+      <div class="guide-link-list">
+        <a href="/guide/"><strong>診断・占いの選び方と基本手順</strong><span>総合ガイド</span></a>
+        <a href="/guide/16type.html"><strong>4つの軸・答え方・有名人情報の見方</strong><span>16タイプ</span></a>
+        <a href="/guide/compatibility.html"><strong>相性点数を恋愛・友達・仕事・家族で生かす</strong><span>相性ガイド</span></a>
+        <a href="/guide/fortune.html"><strong>姓名判断・十干・血液型占いの範囲と注意</strong><span>占いガイド</span></a>
+      </div>
+    </section>
+
     <section class="info-card faq-list" aria-labelledby="home-faq">
       <p class="content-kicker">FAQ</p>
       <h2 id="home-faq">よくある質問</h2>${faqHtml}

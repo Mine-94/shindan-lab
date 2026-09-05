@@ -79,6 +79,8 @@ function jaccard(left, right) {
 
 function pageFamily(pathname) {
   if (pathname === '/') return 'home';
+  if (/^\/guide(?:\/|$)/.test(pathname)) return 'guide';
+  if (/^\/(updates|sitemap)\.html$/.test(pathname)) return 'site-info';
   if (/^\/(about|contact|privacy|terms|editorial-policy)\.html$/.test(pathname)) return 'trust';
   if (/^\/16type\/r\//.test(pathname)) return '16type-result';
   if (/^\/16type\/(love|friend|work|family)$/.test(pathname)) return 'relation-guide';
@@ -177,7 +179,7 @@ async function main() {
     const sitemapResponse = await fetch(`${BASE}/sitemap.xml`);
     const sitemap = await sitemapResponse.text();
     const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
-    assert(urls.length === 60, `Expected 60 sitemap URLs, got ${urls.length}`);
+    assert(urls.length === 66, `Expected 66 sitemap URLs, got ${urls.length}`);
 
     const pages = [];
     for (const url of urls) {
@@ -259,7 +261,7 @@ async function main() {
       page.adLoaders > 1
     );
     assert(hardFailures.length === 0, `Hard page-quality failures: ${hardFailures.map((page) => page.path).join(', ')}`);
-    console.log('\nPASS: all 60 sitemap pages have 200 status, title, H1, canonical official host and no duplicate AdSense loader.');
+    console.log('\nPASS: all 66 sitemap pages have 200 status, title, H1, canonical official host and no duplicate AdSense loader.');
   } finally {
     child.kill('SIGTERM');
     await new Promise((resolve) => {

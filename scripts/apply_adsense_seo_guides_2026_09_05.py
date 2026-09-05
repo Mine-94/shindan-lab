@@ -57,7 +57,12 @@ NEW_STATIC_FOOTER = '''        <a href="/">ホーム</a>
 def patch_render() -> None:
     path = "views/render.js"
     text = read(path)
-    text = replace_if_present(text, OLD_NAV_PAIR, NEW_NAV_PAIR, "dynamic navigation guide link")
+    dynamic_old = """      <a href=\"/ketsueki\">占い</a>
+      <a href=\"/about.html\">運営情報</a>"""
+    dynamic_new = """      <a href=\"/ketsueki\">占い</a>
+      <a href=\"/guide/\">使い方</a>
+      <a href=\"/about.html\">運営情報</a>"""
+    text = replace_if_present(text, dynamic_old, dynamic_new, "dynamic navigation guide link")
 
     old_footer = '''      <a href="/">ホーム</a>
       <a href="/about.html">しんだんラボについて</a>

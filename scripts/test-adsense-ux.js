@@ -124,7 +124,7 @@ async function main() {
     const home = await fetchPage('/');
     assertCorePage(home, 'Home');
     assert(home.text.includes('class="content-review container"'), 'Visible editorial review is missing');
-    assert(home.text.includes('最終確認：2026年9月3日'), 'Visible review date is missing');
+    assert(home.text.includes('最終確認：2026年9月5日'), 'Visible review date is missing');
 
     const quiz = await fetchPage('/q/honto-no-seikaku');
     assertCorePage(quiz, 'Quiz landing');
@@ -165,8 +165,9 @@ async function main() {
 
     const sitemap = await fetchPage('/sitemap.xml');
     assert(sitemap.response.status === 200, 'Sitemap did not return 200');
-    assert(count(sitemap.text, '<url>') === 60, 'Sitemap must retain 60 reviewed URLs');
-    assert(count(sitemap.text, '<lastmod>2026-09-03</lastmod>') === 60, 'Sitemap lastmod count is wrong');
+    assert(count(sitemap.text, '<url>') === 66, 'Sitemap must retain 66 reviewed URLs');
+    assert(count(sitemap.text, '<lastmod>') === 66, 'Every sitemap URL must have lastmod');
+    assert(sitemap.text.includes('<lastmod>2026-09-05</lastmod>'), 'Current sitemap update date is missing');
     assert(!sitemap.text.includes('/meimei/r/'), 'Name result URLs returned to the sitemap');
 
     const www = await requestWithHost('www.shindan24.com');
@@ -184,7 +185,7 @@ async function main() {
     );
 
     console.log('PASS: AdSense code is limited to publisher-content pages and defaults to the verified publisher ID.');
-    console.log('PASS: global navigation, visible editorial review, referrer policy, cache headers, www redirect and 60 lastmod entries validated.');
+    console.log('PASS: global navigation, visible editorial review, referrer policy, cache headers, www redirect and 66 lastmod entries validated.');
   } finally {
     child.kill('SIGTERM');
     await new Promise((resolve) => {

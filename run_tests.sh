@@ -106,6 +106,16 @@ check_status "存在しないURLは正しい404" "$BASE/this-page-does-not-exist
 check_contains "sitemapに/shichuu含む" "$BASE/sitemap.xml" "/shichuu</loc>"
 check_contains "sitemapに/ketsueki含む" "$BASE/sitemap.xml" "/ketsueki</loc>"
 check_contains "sitemapに/meimei含む" "$BASE/sitemap.xml" "/meimei</loc>"
+check_status "使い方ガイド" "$BASE/guide/" 200
+check_contains "使い方ガイドに目的別案内" "$BASE/guide/" "知りたいことから選ぶ"
+check_status "16タイプガイド" "$BASE/guide/16type.html" 200
+check_status "相性結果ガイド" "$BASE/guide/compatibility.html" 200
+check_status "占いガイド" "$BASE/guide/fortune.html" 200
+check_status "更新情報" "$BASE/updates.html" 200
+check_status "HTMLサイトマップ" "$BASE/sitemap.html" 200
+check_contains "XMLサイトマップに使い方ガイド" "$BASE/sitemap.xml" "/guide/</loc>"
+check_contains "XMLサイトマップに更新情報" "$BASE/sitemap.xml" "/updates.html</loc>"
+check_contains "XMLサイトマップにHTMLサイトマップ" "$BASE/sitemap.xml" "/sitemap.html</loc>"
 
 echo ""
 echo "=== SEO修正: sitemapに動的ページが含まれるか ==="
@@ -117,12 +127,12 @@ check_not_contains "sitemapから任意の姓名結果を除外" "$BASE/sitemap.
 
 curl -s "$BASE/sitemap.xml" -o /tmp/shindan_resp.html
 url_count=$(grep -o '<url>' /tmp/shindan_resp.html | wc -l)
-echo "sitemap内のURL数: $url_count (期待値: 静的36+十干10+血液型単4+血液型ペア10=60)"
-if [ "$url_count" == "60" ]; then
+echo "sitemap内のURL数: $url_count (期待値: 静的42+十干10+血液型単4+血液型ペア10=66)"
+if [ "$url_count" == "66" ]; then
   echo "PASS  sitemap URL数が期待通り"
   pass=$((pass+1))
 else
-  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 60)"
+  echo "FAIL  sitemap URL数不一致 (got $url_count, expected 66)"
   fail=$((fail+1))
 fi
 

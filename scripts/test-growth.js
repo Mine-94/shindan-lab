@@ -112,7 +112,7 @@ async function main() {
 
     const sitemap = await fetchText('/sitemap.xml');
     assert(sitemap.response.status === 200, 'Sitemap did not return 200');
-    assert((sitemap.text.match(/<url>/g) || []).length === 60, 'Sitemap must contain 60 reviewed URLs');
+    assert((sitemap.text.match(/<url>/g) || []).length === 66, 'Sitemap must contain 66 reviewed URLs');
     for (const relation of ['love', 'friend', 'work', 'family']) {
       assert(sitemap.text.includes(`/16type/${relation}</loc>`), `${relation} guide missing from sitemap`);
     }

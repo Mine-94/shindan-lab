@@ -57,6 +57,9 @@ async function main() {
     const home = await fetchPage('/');
     assert(home.response.status === 200, 'Home must return 200');
     for (const link of [
+      '/guide/',
+      '/updates.html',
+      '/sitemap.html',
       '/about.html',
       '/editorial-policy.html',
       '/contact.html',
@@ -88,6 +91,21 @@ async function main() {
       assert(page.text.includes('href="/contact.html"') || pathname === '/contact.html', `${pathname} lacks contact path`);
     }
 
+    const guidePages = [
+      ['/guide/', '知りたいことから選ぶ'],
+      ['/guide/16type.html', '4つの回答軸'],
+      ['/guide/compatibility.html', '関係別に確認したいこと'],
+      ['/guide/fortune.html', '三つの占いの違い'],
+      ['/updates.html', '2026.09.05'],
+      ['/sitemap.html', '16タイプの個別解説'],
+    ];
+    for (const [pathname, marker] of guidePages) {
+      const page = await fetchPage(pathname);
+      assert(page.response.status === 200, `${pathname} must return 200`);
+      assert(page.text.includes(marker), `${pathname} is missing ${marker}`);
+      assert(page.text.includes('href="/contact.html"'), `${pathname} lacks contact navigation`);
+    }
+
     const privacy = await fetchPage('/privacy.html');
     for (const marker of [
       'Google AdSense',
@@ -110,8 +128,11 @@ async function main() {
     const sitemap = await fetchPage('/sitemap.xml');
     assert(sitemap.response.status === 200, 'Sitemap must return 200');
     const urls = sitemap.text.match(/<url>/g) || [];
-    assert(urls.length === 60, `Sitemap must contain 60 reviewed URLs, got ${urls.length}`);
+    assert(urls.length === 66, `Sitemap must contain 66 reviewed URLs, got ${urls.length}`);
     assert(sitemap.text.includes('https://shindan24.com/contact.html</loc>'), 'Contact page missing from sitemap');
+    assert(sitemap.text.includes('https://shindan24.com/guide/</loc>'), 'Guide page missing from sitemap');
+    assert(sitemap.text.includes('https://shindan24.com/updates.html</loc>'), 'Updates page missing from sitemap');
+    assert(sitemap.text.includes('https://shindan24.com/sitemap.html</loc>'), 'HTML sitemap missing from XML sitemap');
     assert(!sitemap.text.includes('/meimei/r/'), 'Arbitrary name-result URLs must not be in sitemap');
     assert(!sitemap.text.includes('shindan-lab.onrender.com'), 'Sitemap contains legacy hostname');
 
@@ -147,7 +168,7 @@ async function main() {
     const robots = await fetchPage('/robots.txt');
     assert(robots.text.includes('Sitemap: https://shindan24.com/sitemap.xml'), 'robots.txt sitemap is not canonical');
 
-    console.log('PASS: AdSense trust pages, public contact form, privacy disclosure, 60-page sitemap, name-result noindex and real 404 handling validated.');
+    console.log('PASS: AdSense trust pages, public contact form, privacy disclosure, 66-page sitemap, name-result noindex and real 404 handling validated.');
   } finally {
     child.kill('SIGTERM');
     await new Promise((resolve) => {

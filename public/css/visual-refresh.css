@@ -1268,3 +1268,33 @@ body.visual-refresh {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* BROWSER_QUALITY_FIX_2026_09_05
+   Browser audit fixes: readable microcopy and a true one-column priority list.
+   The previous generic three-column quiz rule overrode the priority component
+   and compressed Japanese text into vertical fragments on desktop. */
+.visual-refresh .brand-copy small {
+  color: #5f5c6c;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.visual-refresh.page-home .content-section .home-priority-grid {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.visual-refresh.page-home .home-priority-card {
+  grid-template-columns: minmax(0, 1fr) 28px;
+  min-width: 0;
+}
+
+.visual-refresh.page-home .home-priority-card h2,
+.visual-refresh.page-home .home-priority-card p {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  writing-mode: horizontal-tb;
+}

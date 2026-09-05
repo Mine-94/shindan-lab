@@ -55,7 +55,7 @@ function withVisualRefresh(html, pageClass) {
 function homeHeroHtml() {
   return `<div class="home-hero-layout">
         <div class="home-hero-copy">
-          <p class="home-hero-kicker">SELF DISCOVERY, MADE CLEAR</p>
+          <p class="home-hero-kicker">自分を知る、相手を知る</p>
           <h1 class="home-main-title" data-content-depth="home-h1" data-content-depth-version="2026-09-05-v1">無料の性格診断・<br />16タイプ相性・占いを、<br /><span>見やすく一つに。</span></h1>
           <p class="tagline">16タイプ、心理テスト、恋愛・友達・仕事の相性、姓名判断、血液型占い、十干タイプ診断を無料で楽しめます。結果を決めつけではなく、自分と相手を理解する会話のきっかけとして使えるように整理しています。</p>
           <div class="home-hero-actions">
@@ -70,7 +70,7 @@ function homeHeroHtml() {
         </div>
         <div class="home-hero-visual" aria-hidden="true">
           <div class="home-hero-card">
-            <span class="home-hero-card-kicker">DISCOVER YOUR PATTERN</span>
+            <span class="home-hero-card-kicker">16タイプを見つける</span>
             <div class="home-hero-wheel"></div>
             <strong>しんだんラボ</strong>
             <small>知ることで、選び方が少し見える。</small>
@@ -94,7 +94,7 @@ function upgradeHomeHero(html) {
 
 function polishHomePriorityCopy(html) {
   return String(html)
-    .replace('<p class="content-kicker">DATA PRIORITY</p>', '<p class="content-kicker">PICK UP</p>')
+    .replace('<p class="content-kicker">DATA PRIORITY</p>', '<p class="content-kicker">まずはこちら</p>')
     .replace('16タイプ・MBTI関連を中心に、今おすすめの診断', 'はじめての方におすすめの診断')
     .replace(
       '日本の公開調査、実サービスの利用行動、検索意図、初めて使う人の始めやすさを点数化し、上位3件を先に表示しています。',
@@ -115,7 +115,7 @@ function polishHomePriorityCopy(html) {
 function celebrityHomeTeaserHtml() {
   return `<section class="type16-celebrity-home-teaser" data-type16-celebrity-home-teaser aria-labelledby="celebrity-home-title">
       <div class="celebrity-teaser-copy">
-        <p class="content-kicker">FIND YOUR OSHI</p>
+        <p class="content-kicker">推しから探す</p>
         <h2 id="celebrity-home-title">推し・有名人から16タイプを探す</h2>
         <p>BTS、BIGBANG、BLACKPINK、日本の俳優・アイドルなど、公表情報を確認できた48人を一つの一覧にまとめています。名前や4文字タイプから、気になる人物との共通点を探せます。</p>
       </div>
@@ -137,13 +137,13 @@ function upgradeCelebrityHomeTeaser(html) {
   return String(html).replace(pattern, celebrityHomeTeaserHtml());
 }
 
-function replaceFirstHeroBadge(html, label) {
+function replaceFirstHeroBadge(html, label, caption = 'TYPE') {
   if (html.includes('class="type16-brand-mark"')) return html;
   const pattern = /<div class="quiz-hero-badge">[\s\S]*?<\/div>/;
   if (!pattern.test(html)) return html;
   return String(html).replace(
     pattern,
-    `<div class="type16-brand-mark" aria-hidden="true"><span>${label}</span><small>TYPE</small></div>`
+    `<div class="type16-brand-mark service-brand-mark" aria-hidden="true"><span>${label}</span><small>${caption}</small></div>`
   );
 }
 
@@ -153,7 +153,8 @@ function polishType16Hub(html) {
       'MBTI関連でよく見かける4文字タイプを、独自の日本語解説で整理',
       '4つの傾向から、自分の考え方や行動パターンを整理'
     ),
-    '16'
+    '16',
+    'TYPE'
   );
 }
 
@@ -163,7 +164,8 @@ function polishType16Test(html) {
       '20問・約3分。4つの回答傾向から今の4文字タイプをチェック',
       '20問・約3分。今の回答傾向を4つの軸で確認'
     ),
-    '20'
+    '20',
+    '問'
   );
 }
 
@@ -186,19 +188,19 @@ function createVisualRefreshRenderers(original) {
   renderers.renderHome = wrap(original, 'renderHome', 'page-home', (html) =>
     upgradeCelebrityHomeTeaser(polishHomePriorityCopy(upgradeHomeHero(html)))
   );
-  renderers.renderQuizPage = wrap(original, 'renderQuizPage', 'page-quiz');
+  renderers.renderQuizPage = wrap(original, 'renderQuizPage', 'page-quiz', (html) => replaceFirstHeroBadge(html, '診', 'テスト'));
   renderers.renderResultPage = wrap(original, 'renderResultPage', 'page-result');
-  renderers.renderShichuuForm = wrap(original, 'renderShichuuForm', 'page-tool');
+  renderers.renderShichuuForm = wrap(original, 'renderShichuuForm', 'page-tool', (html) => replaceFirstHeroBadge(html, '十', '干'));
   renderers.renderShichuuResult = wrap(original, 'renderShichuuResult', 'page-result');
-  renderers.renderKetsuekiForm = wrap(original, 'renderKetsuekiForm', 'page-tool');
+  renderers.renderKetsuekiForm = wrap(original, 'renderKetsuekiForm', 'page-tool', (html) => replaceFirstHeroBadge(html, '血', '型'));
   renderers.renderKetsuekiResult = wrap(original, 'renderKetsuekiResult', 'page-result');
-  renderers.renderMeimeiForm = wrap(original, 'renderMeimeiForm', 'page-tool');
+  renderers.renderMeimeiForm = wrap(original, 'renderMeimeiForm', 'page-tool', (html) => replaceFirstHeroBadge(html, '名', '前'));
   renderers.renderMeimeiResult = wrap(original, 'renderMeimeiResult', 'page-result');
   renderers.renderType16Hub = wrap(original, 'renderType16Hub', 'page-type16-hub', polishType16Hub);
   renderers.renderType16Test = wrap(original, 'renderType16Test', 'page-type16-test', polishType16Test);
   renderers.renderType16Result = wrap(original, 'renderType16Result', 'page-type16-result');
-  renderers.renderType16Compatibility = wrap(original, 'renderType16Compatibility', 'page-type16-compat');
-  renderers.renderType16RelationGuide = wrap(original, 'renderType16RelationGuide', 'page-relation-guide');
+  renderers.renderType16Compatibility = wrap(original, 'renderType16Compatibility', 'page-type16-compat', (html) => replaceFirstHeroBadge(html, '相', '性'));
+  renderers.renderType16RelationGuide = wrap(original, 'renderType16RelationGuide', 'page-relation-guide', (html) => replaceFirstHeroBadge(html, '相', '性'));
 
   return Object.fromEntries(Object.entries(renderers).filter(([, value]) => value));
 }

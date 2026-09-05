@@ -1,0 +1,80 @@
+name: Enable AdSense SEO guides and 66-page sitemap
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enable-adsense-seo-guides.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shindan24-adsense-seo-guides
+  cancel-in-progress: false
+
+jobs:
+  migrate-test-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply the assertion-based guide and sitemap migration
+        run: python3 scripts/apply_adsense_seo_guides_2026_09_05.py
+
+      - name: Validate source syntax
+        run: |
+          python3 -m py_compile scripts/apply_adsense_seo_guides_2026_09_05.py
+          node --check server.js
+          node --check views/render.js
+          node --check views/quality-render.js
+          node --check scripts/test-guide-pages.js
+          node --check scripts/audit-adsense-content.js
+          node --check scripts/test-adsense-ux.js
+          node --check scripts/test-adsense-readiness.js
+          node --check scripts/test-growth.js
+          node --check scripts/test-quality.js
+
+      - name: Test the new substantive guide pages first
+        run: node scripts/test-guide-pages.js
+
+      - name: Run full shell regression suite
+        run: bash run_tests.sh
+
+      - name: Run all packaged tests and content audit
+        run: npm test
+
+      - name: Commit only the fully tested production changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            server.js \
+            views/render.js \
+            views/quality-render.js \
+            public/about.html \
+            public/editorial-policy.html \
+            public/contact.html \
+            public/privacy.html \
+            public/terms.html \
+            run_tests.sh \
+            package.json \
+            scripts/audit-adsense-content.js \
+            scripts/test-adsense-ux.js \
+            scripts/test-adsense-readiness.js \
+            scripts/test-growth.js \
+            scripts/test-quality.js
+          if git diff --cached --quiet; then
+            echo 'The AdSense guide and sitemap release is already integrated.'
+            exit 0
+          fi
+          git commit -m "Add substantive Japanese guides and a reviewed 66-page sitemap"
+          git push origin main

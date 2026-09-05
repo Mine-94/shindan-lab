@@ -74,7 +74,7 @@ async function main() {
     assert(home.text.includes('目的から診断を選ぶ'), 'Home guide is missing');
     assert(home.text.includes('使い方・結果の読み方'), 'Home usage-guide section is missing');
     assert(home.text.includes('href="/guide/"'), 'Home guide link is missing');
-    assert(home.text.includes('16タイプ・MBTI関連'), 'Home 16-type section is missing');
+    assert(home.text.includes('はじめての方におすすめの診断'), 'Home recommendation section is missing');
     assert(home.text.includes('関係から相性を探す'), 'Home relation guide section is missing');
 
     const priorityIndex = home.text.indexOf('data-home-priority-version="2026-09-02"');

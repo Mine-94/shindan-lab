@@ -184,7 +184,7 @@ check_contains "sitemapに/q/kakure-chara含む" "$BASE/sitemap.xml" "/q/kakure-
 echo ""
 echo "=== 16タイプ診断・相性チェック ==="
 check_status "16タイプ一覧" "$BASE/16type" 200
-check_contains "ホームに16タイプ・MBTI関連セクション" "$BASE/" "16タイプ・MBTI関連"
+check_contains "ホームにおすすめ診断セクション" "$BASE/" "はじめての方におすすめの診断"
 check_contains "16タイプ一覧に公式MBTIとの区別" "$BASE/16type" "公式MBTI®ではありません"
 check_status "16タイプ簡易診断" "$BASE/16type/test" 200
 check_contains "簡易診断に20問データ" "$BASE/16type/test" "window.__TYPE16_TEST__"

@@ -1,0 +1,68 @@
+name: Verify repaired Japanese site in a real browser
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-browser-quality-live-once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shindan24-live-browser-proof
+  cancel-in-progress: true
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Wait for the repaired release to reach shindan24.com
+        run: |
+          set -euo pipefail
+          ready=0
+          for attempt in $(seq 1 42); do
+            curl -fsS --max-time 60 https://shindan24.com/ -o /tmp/home.html || true
+            curl -fsS --max-time 60 https://shindan24.com/css/visual-refresh.css -o /tmp/visual-refresh.css || true
+            curl -fsS --max-time 60 https://shindan24.com/16type/test -o /tmp/type-test.html || true
+            if grep -q '自分を知る、相手を知る' /tmp/home.html 2>/dev/null \
+              && grep -q 'BROWSER_QUALITY_FIX_2026_09_05' /tmp/visual-refresh.css 2>/dev/null \
+              && grep -q '<span>20</span><small>問</small>' /tmp/type-test.html 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'The repaired release was not visible on shindan24.com in time.'
+            exit 1
+          fi
+          echo 'The repaired release is live.'
+
+      - name: Install production dependencies
+        run: npm ci
+
+      - name: Install Chromium audit runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.62.1
+          npx playwright install --with-deps chromium
+
+      - name: Re-run all core services and layouts against production
+        env:
+          QA_BASE_URL: https://shindan24.com
+          QA_OUTPUT_DIR: artifacts/live-browser-proof
+        run: node scripts/browser-quality-gate.js
+
+      - name: Upload live proof screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-browser-proof-${{ github.run_id }}
+          path: artifacts/live-browser-proof
+          if-no-files-found: warn
+          retention-days: 14

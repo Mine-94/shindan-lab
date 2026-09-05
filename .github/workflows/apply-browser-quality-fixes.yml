@@ -1,0 +1,71 @@
+name: Apply browser quality audit fixes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-browser-quality-fixes.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shindan24-browser-quality-fixes
+  cancel-in-progress: false
+
+jobs:
+  patch-test-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install production dependencies
+        run: npm ci
+
+      - name: Apply verified layout, contrast and label fixes
+        run: python3 scripts/apply_quality_polish_2026_09_05.py
+
+      - name: Validate source syntax
+        run: |
+          python3 -m py_compile scripts/apply_quality_polish_2026_09_05.py
+          node --check views/visual-refresh-render.js
+          node --check scripts/browser-quality-gate.js
+
+      - name: Run existing regression and content tests
+        run: npm test
+
+      - name: Install Chromium audit runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.62.1
+          npx playwright install --with-deps chromium
+
+      - name: Prove the reported responsive layout defects are fixed
+        env:
+          QA_OUTPUT_DIR: artifacts/fixed-quality-gate
+        run: node scripts/browser-quality-gate.js
+
+      - name: Upload proof screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixed-browser-quality-${{ github.run_id }}
+          path: artifacts/fixed-quality-gate
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Commit only the fully tested fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/css/visual-refresh.css views/visual-refresh-render.js
+          if git diff --cached --quiet; then
+            echo 'Browser quality fixes are already current.'
+            exit 0
+          fi
+          git commit -m "Fix desktop priority layout and improve interface clarity"
+          git push origin main

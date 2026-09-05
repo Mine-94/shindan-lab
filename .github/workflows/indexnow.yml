@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: shindan24-indexnow-reviewed-pages
+  cancel-in-progress: true
+
 jobs:
   submit:
     runs-on: ubuntu-latest
@@ -18,20 +22,42 @@ jobs:
       SITE_URL: https://shindan24.com
       INDEXNOW_KEY: c43e252ab66ef069ad3bbb37b081739d
     steps:
-      - name: Read the deployed reviewed sitemap
+      - name: Wait for the deployed 66-page sitemap and ownership key
         run: |
-          set -euo pipefail
-          curl -fsS --retry 5 --retry-delay 5 --max-time 60 "$SITE_URL/$INDEXNOW_KEY.txt" | grep -qx "$INDEXNOW_KEY"
-          curl -fsS --retry 5 --retry-delay 5 --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
-          url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
-          [ "$url_count" = '60' ]
-          grep -q "$SITE_URL/contact.html</loc>" /tmp/sitemap.xml
-          if grep -q '/meimei/r/' /tmp/sitemap.xml; then
-            echo 'Thin name-result URLs remain in the deployed sitemap.'
+          set -u
+          ready=0
+          for attempt in $(seq 1 36); do
+            key_ok=0
+            sitemap_ok=0
+            if curl -fsS --max-time 45 "$SITE_URL/$INDEXNOW_KEY.txt" | grep -qx "$INDEXNOW_KEY"; then
+              key_ok=1
+            fi
+            if curl -fsS --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml; then
+              url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
+              if [ "$url_count" = '66' ] \
+                && grep -q "$SITE_URL/guide/</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/guide/16type.html</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/guide/compatibility.html</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/guide/fortune.html</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/updates.html</loc>" /tmp/sitemap.xml \
+                && grep -q "$SITE_URL/sitemap.html</loc>" /tmp/sitemap.xml \
+                && ! grep -q '/meimei/r/' /tmp/sitemap.xml; then
+                sitemap_ok=1
+              fi
+            fi
+            if [ "$key_ok" -eq 1 ] && [ "$sitemap_ok" -eq 1 ]; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'The deployed 66-page sitemap or IndexNow key could not be verified.'
             exit 1
           fi
+          echo 'Verified the canonical 66-page sitemap and IndexNow key.'
 
-      - name: Build IndexNow payload
+      - name: Build the reviewed IndexNow payload
         run: |
           python3 - <<'PY'
           import json
@@ -48,8 +74,25 @@ jobs:
                   if value == site_url or value.startswith(f'{site_url}/'):
                       urls.append(value)
           urls = list(dict.fromkeys(urls))
-          if len(urls) != 60:
-              raise SystemExit(f'Expected 60 reviewed URLs, found {len(urls)}')
+          if len(urls) != 66:
+              raise SystemExit(f'Expected 66 reviewed URLs, found {len(urls)}')
+
+          required = {
+              f'{site_url}/',
+              f'{site_url}/guide/',
+              f'{site_url}/guide/16type.html',
+              f'{site_url}/guide/compatibility.html',
+              f'{site_url}/guide/fortune.html',
+              f'{site_url}/updates.html',
+              f'{site_url}/sitemap.html',
+              f'{site_url}/about.html',
+              f'{site_url}/contact.html',
+              f'{site_url}/privacy.html',
+          }
+          missing = sorted(required.difference(urls))
+          if missing:
+              raise SystemExit(f'Required reviewed URLs are missing: {missing}')
+
           payload = {
               'host': 'shindan24.com',
               'key': key,
@@ -58,6 +101,7 @@ jobs:
           }
           with open('/tmp/indexnow.json', 'w', encoding='utf-8') as handle:
               json.dump(payload, handle, ensure_ascii=False)
+          print(f'Prepared {len(urls)} reviewed URLs for IndexNow.')
           PY
 
       - name: Submit the reviewed URLs
@@ -72,4 +116,4 @@ jobs:
             echo "IndexNow returned HTTP $status"
             exit 1
           fi
-          echo "IndexNow accepted 60 reviewed shindan24.com URLs with HTTP $status."
+          echo "IndexNow accepted all 66 reviewed shindan24.com URLs with HTTP $status."

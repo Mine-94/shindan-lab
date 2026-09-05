@@ -17,10 +17,11 @@ from pathlib import Path
 from typing import Iterable
 
 USER_AGENT = (
-    "Mozilla/5.0 (compatible; ShindanLabTrendMonitor/1.1; "
+    "Mozilla/5.0 (compatible; ShindanLabTrendMonitor/1.2; "
     "+https://shindan24.com/about.html)"
 )
 SITE_URL = "https://shindan24.com"
+EXPECTED_SITEMAP_URLS = 66
 KEYWORDS = (
     "診断",
     "占い",
@@ -161,14 +162,21 @@ def site_health() -> tuple[list[str], list[str]]:
     ok: list[str] = []
     errors: list[str] = []
     checks = {
-        "ホーム": (f"{SITE_URL}/", "しんだんラボ"),
-        "サイトマップ": (f"{SITE_URL}/sitemap.xml", "/16type/r/ENFP</loc>"),
+        "ホーム": (f"{SITE_URL}/", "使い方・結果の読み方"),
         "運営方針": (f"{SITE_URL}/about.html", "しんだんラボについて"),
         "編集ポリシー": (f"{SITE_URL}/editorial-policy.html", "編集・診断ポリシー"),
+        "お問い合わせ": (f"{SITE_URL}/contact.html", "公開問い合わせフォームを開く"),
+        "プライバシー": (f"{SITE_URL}/privacy.html", "第三者配信事業者"),
         "16タイプ一覧": (f"{SITE_URL}/16type", "16タイプ性格一覧"),
         "16タイプ簡易診断": (f"{SITE_URL}/16type/test", "window.__TYPE16_TEST__"),
         "16タイプ相性": (f"{SITE_URL}/16type/compatibility", "16タイプ相性チェック"),
         "16タイプ詳細": (f"{SITE_URL}/16type/r/ENFP", "恋愛で出やすい傾向"),
+        "使い方ガイド": (f"{SITE_URL}/guide/", "しんだんラボの使い方ガイド"),
+        "16タイプガイド": (f"{SITE_URL}/guide/16type.html", "4つの回答軸"),
+        "相性結果ガイド": (f"{SITE_URL}/guide/compatibility.html", "相性点数で分からないこと"),
+        "占いガイド": (f"{SITE_URL}/guide/fortune.html", "三つの占いの違い"),
+        "更新情報": (f"{SITE_URL}/updates.html", "2026.09.05"),
+        "HTMLサイトマップ": (f"{SITE_URL}/sitemap.html", "16タイプの個別解説"),
     }
     for label, (url, expected) in checks.items():
         try:
@@ -178,6 +186,28 @@ def site_health() -> tuple[list[str], list[str]]:
             ok.append(f"{label}: 200 / expected content found")
         except Exception as exc:
             errors.append(f"{label}: {exc}")
+
+    try:
+        sitemap_body = fetch(f"{SITE_URL}/sitemap.xml").decode("utf-8", errors="replace")
+        url_count = sitemap_body.count("<url>")
+        required = (
+            f"{SITE_URL}/16type/r/ENFP</loc>",
+            f"{SITE_URL}/guide/</loc>",
+            f"{SITE_URL}/guide/compatibility.html</loc>",
+            f"{SITE_URL}/updates.html</loc>",
+            f"{SITE_URL}/sitemap.html</loc>",
+        )
+        if url_count != EXPECTED_SITEMAP_URLS:
+            raise RuntimeError(f"expected {EXPECTED_SITEMAP_URLS} URLs, found {url_count}")
+        missing = [value for value in required if value not in sitemap_body]
+        if missing:
+            raise RuntimeError(f"required URLs missing: {missing}")
+        if "/meimei/r/" in sitemap_body:
+            raise RuntimeError("private name-result URLs entered the sitemap")
+        ok.append(f"XMLサイトマップ: 200 / {url_count} reviewed URLs found")
+    except Exception as exc:
+        errors.append(f"XMLサイトマップ: {exc}")
+
     return ok, errors
 
 

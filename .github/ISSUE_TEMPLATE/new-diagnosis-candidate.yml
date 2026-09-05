@@ -1,0 +1,156 @@
+name: 新規診断・サービス候補の審査
+about: 検索需要、独自価値、権利・プライバシー、AdSense適合性、品質検証を確認してから追加する
+labels: enhancement, content-review
+title: "[新規診断候補] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        新しい診断やサービスは、ページ数を増やす目的では追加しません。既存機能の改善では解決できず、日本の利用者に確認可能な需要があり、独自の内容を十分に作れる場合だけ審査します。
+
+  - type: input
+    id: candidate-name
+    attributes:
+      label: 候補名
+      description: 利用者が理解できる仮の日本語名
+      placeholder: 例：恋愛コミュニケーションタイプ診断
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-problem
+    attributes:
+      label: 利用者が解決したいこと
+      description: 誰が、どんな場面で、何を知りたいのかを具体的に書いてください。
+      placeholder: 検索語ではなく、利用者の状況と期待する結果を書く
+    validations:
+      required: true
+
+  - type: textarea
+    id: demand-evidence
+    attributes:
+      label: 日本での需要を確認できる根拠
+      description: Search Console、GA4、Google Trends、公式調査、公開された実利用データ、SNSで継続して見られる具体的な反応など。確認日とURLまたは数値を含めてください。
+      placeholder: |
+        - 確認日：YYYY-MM-DD
+        - 検索語・ページ・数値：
+        - 根拠URLまたは内部レポート：
+        - 一時的な話題ではなく追加する理由：
+    validations:
+      required: true
+
+  - type: textarea
+    id: existing-content
+    attributes:
+      label: 既存ページの改善では足りない理由
+      description: まず統合・説明追加・導線改善・結果文改善を検討し、新規ページが必要な理由を書いてください。
+      placeholder: 検討した既存URLと、そこで解決できない利用意図
+    validations:
+      required: true
+
+  - type: textarea
+    id: unique-value
+    attributes:
+      label: 大型サイトと違う独自価値
+      description: 他サービスの質問・結果名・文章・キャラクターをコピーせず、しんだんラボだから提供できる価値を説明してください。
+      placeholder: 独自の質問軸、結果の使い方、関係別の具体例、説明の深さなど
+    validations:
+      required: true
+
+  - type: textarea
+    id: content-plan
+    attributes:
+      label: 公開ページの内容設計
+      description: 入力フォームだけで終わらない構成を書いてください。
+      placeholder: |
+        - 何が分かるか
+        - 使い方
+        - 計算・判定方法
+        - 結果の読み方
+        - 限界と注意事項
+        - FAQ
+        - 関連ページへの内部リンク
+        - 各結果に固有の説明
+    validations:
+      required: true
+
+  - type: textarea
+    id: result-design
+    attributes:
+      label: 結果タイプと重複防止
+      description: 結果数、各結果の違い、似た文章の量産を防ぐ方法を記載してください。
+      placeholder: 各結果が別の利用価値を持つことを説明する
+    validations:
+      required: true
+
+  - type: dropdown
+    id: index-policy
+    attributes:
+      label: 検索対象の方針
+      options:
+        - 固有説明がある代表ページのみindex
+        - 入力・個人化結果はnoindex、代表ページのみindex
+        - 全ページnoindex（共有・機能専用）
+        - 未定（公開不可）
+    validations:
+      required: true
+
+  - type: textarea
+    id: rights-privacy
+    attributes:
+      label: 著作権・商標・肖像・個人情報の確認
+      description: 写真、人物名、診断名称、入力データ、外部資料、保存期間を確認してください。
+      placeholder: |
+        - 使用する第三者素材と許諾：
+        - 商標との区別：
+        - 個人情報を入力するか：
+        - サーバー保存の有無：
+        - 未成年者への配慮：
+    validations:
+      required: true
+
+  - type: textarea
+    id: adsense-policy
+    attributes:
+      label: AdSense・広告方針
+      description: 空の画面、個人化結果、クリック誘導、センシティブな内容に広告を置かない設計を確認してください。
+      placeholder: 広告を表示する代表ページと、表示しない結果・入力・政策ページ
+    validations:
+      required: true
+
+  - type: textarea
+    id: quality-test
+    attributes:
+      label: 公開前の品質検証
+      description: 機能、文章、レスポンシブ、アクセシビリティ、検索品質をどう検証するか記載してください。
+      placeholder: |
+        - 全分岐・全結果の自動テスト
+        - 390 / 768 / 1440pxの実ブラウザ確認
+        - 文字切れ、横はみ出し、カード外へのボタン突出、円・四角の歪み
+        - 200 / 404 / canonical / noindex / sitemap
+        - 本文の独自性と類似度
+    validations:
+      required: true
+
+  - type: textarea
+    id: success-metrics
+    attributes:
+      label: 公開後14日・30日の判断基準
+      description: 維持、改善、統合、停止を数字で判断できる指標を設定してください。
+      placeholder: 開始率、完了率、共有率、再訪、検索表示、離脱など。最低サンプル数も記載
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: final-check
+    attributes:
+      label: 公開条件
+      options:
+        - label: 既存機能の不具合と品質警告が0件である
+          required: true
+        - label: 日本語の質問・結果・説明を人が読み、テンプレート調・機械翻訳調・不自然な反復を修正した
+          required: true
+        - label: 需要の根拠がなくなった場合は公開を見送る
+          required: true
+        - label: 自動テストと実ブラウザ品質ゲートを通過するまで本番へ出さない
+          required: true

@@ -15,7 +15,8 @@ on:
       - scripts/browser-quality-gate.js
       - .github/workflows/continuous-quality-gate.yml
   schedule:
-    - cron: '20 1 * * *'
+    # 08:45 JST: complete the live quality check before the 09:15 JST trend watch.
+    - cron: '45 23 * * *'
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,7 @@ jobs:
   local-release-gate:
     name: Local functional and layout gate
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -60,6 +62,7 @@ jobs:
     name: Daily live production gate
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

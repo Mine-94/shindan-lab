@@ -1,0 +1,150 @@
+name: Continuous Japanese site quality gate
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - server.js
+      - views/**
+      - data/**
+      - public/css/**
+      - public/js/**
+      - public/*.html
+      - public/guide/**
+      - scripts/browser-quality-gate.js
+      - .github/workflows/continuous-quality-gate.yml
+  schedule:
+    - cron: '20 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: shindan24-continuous-quality-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  local-release-gate:
+    name: Local functional and layout gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install production dependencies
+        run: npm ci
+
+      - name: Install Chromium audit runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.62.1
+          npx playwright install --with-deps chromium
+
+      - name: Run browser quality gate against this commit
+        env:
+          QA_OUTPUT_DIR: artifacts/local-quality-gate
+        run: node scripts/browser-quality-gate.js
+
+      - name: Upload local screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-browser-quality-${{ github.run_id }}
+          path: artifacts/local-quality-gate
+          if-no-files-found: warn
+          retention-days: 14
+
+  live-production-gate:
+    name: Daily live production gate
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install production dependencies
+        run: npm ci
+
+      - name: Install Chromium audit runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.62.1
+          npx playwright install --with-deps chromium
+
+      - name: Run browser quality gate against shindan24.com
+        id: live_audit
+        continue-on-error: true
+        env:
+          QA_BASE_URL: https://shindan24.com
+          QA_OUTPUT_DIR: artifacts/live-quality-gate
+        run: node scripts/browser-quality-gate.js
+
+      - name: Upload live screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-browser-quality-${{ github.run_id }}
+          path: artifacts/live-quality-gate
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Prepare issue report when the live gate fails
+        if: steps.live_audit.outcome == 'failure'
+        run: |
+          node - <<'NODE' > /tmp/quality-issue.md
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync('artifacts/live-quality-gate/quality-report.json', 'utf8'));
+          console.log('일본판 `shindan24.com`의 자동 브라우저 품질 점검에서 문제가 발견됐습니다.');
+          console.log('');
+          console.log(`- 점검 시각: ${report.auditedAt}`);
+          console.log(`- 사이트맵 URL: ${report.sitemap ? report.sitemap.urlCount : '확인 실패'}`);
+          console.log(`- 실패 수: ${report.failures.length}`);
+          console.log(`- 실행: https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`);
+          console.log('');
+          console.log('### 우선 확인할 항목');
+          report.failures.slice(0, 40).forEach((failure) => console.log(`- ${failure}`));
+          if (report.failures.length > 40) console.log(`- 그 외 ${report.failures.length - 40}건은 첨부된 JSON 보고서 참조`);
+          console.log('');
+          console.log('스크린샷과 전체 보고서는 해당 Actions 실행의 `live-browser-quality` 아티팩트에 저장됩니다. 기능 복구와 레이아웃 문제 해결을 신규 콘텐츠 추가보다 먼저 처리합니다.');
+          NODE
+
+      - name: Open or update one quality incident issue
+        if: steps.live_audit.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          issue_number=$(gh issue list \
+            --state open \
+            --search '[자동 품질 점검] shindan24.com in:title' \
+            --json number \
+            --jq '.[0].number // empty')
+          if [ -z "$issue_number" ]; then
+            gh issue create \
+              --title '[자동 품질 점검] shindan24.com 기능·레이아웃 오류' \
+              --body-file /tmp/quality-issue.md \
+              --label bug || gh issue create \
+              --title '[자동 품질 점검] shindan24.com 기능·레이아웃 오류' \
+              --body-file /tmp/quality-issue.md
+          else
+            gh issue comment "$issue_number" --body-file /tmp/quality-issue.md
+          fi
+
+      - name: Close a recovered quality incident
+        if: steps.live_audit.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          issue_number=$(gh issue list \
+            --state open \
+            --search '[자동 품질 점검] shindan24.com in:title' \
+            --json number \
+            --jq '.[0].number // empty')
+          if [ -n "$issue_number" ]; then
+            gh issue comment "$issue_number" --body "자동 재점검이 통과해 기능·레이아웃이 정상 상태로 복구됐습니다. 실행: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            gh issue close "$issue_number" --reason completed
+          fi
+
+      - name: Fail the workflow when production quality failed
+        if: steps.live_audit.outcome == 'failure'
+        run: exit 1

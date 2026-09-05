@@ -1,0 +1,149 @@
+name: Verify live AdSense SEO guide release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-adsense-seo-guides-live.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shindan24-live-adsense-seo-guides
+  cancel-in-progress: true
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: https://shindan24.com
+    steps:
+      - name: Wait until the complete 66-page release is live
+        run: |
+          set -u
+          ready=0
+          for attempt in $(seq 1 36); do
+            curl -fsS --max-time 60 "$SITE_URL/" -o /tmp/home.html || true
+            curl -fsS --max-time 60 "$SITE_URL/guide/" -o /tmp/guide.html || true
+            curl -fsS --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml || true
+            url_count=$(grep -o '<url>' /tmp/sitemap.xml 2>/dev/null | wc -l | tr -d ' ')
+            if grep -q '使い方・結果の読み方' /tmp/home.html 2>/dev/null \
+              && grep -q 'しんだんラボの使い方ガイド' /tmp/guide.html 2>/dev/null \
+              && [ "$url_count" = '66' ] \
+              && grep -q "$SITE_URL/guide/compatibility.html</loc>" /tmp/sitemap.xml 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'The complete 66-page guide release was not visible on shindan24.com.'
+            exit 1
+          fi
+
+      - name: Verify guide depth, policy navigation and index inventory
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 60 -D /tmp/home.headers "$SITE_URL/" -o /tmp/home.html
+          curl -fsS --max-time 60 "$SITE_URL/guide/" -o /tmp/guide.html
+          curl -fsS --max-time 60 "$SITE_URL/guide/16type.html" -o /tmp/type-guide.html
+          curl -fsS --max-time 60 "$SITE_URL/guide/compatibility.html" -o /tmp/compat-guide.html
+          curl -fsS --max-time 60 "$SITE_URL/guide/fortune.html" -o /tmp/fortune-guide.html
+          curl -fsS --max-time 60 "$SITE_URL/updates.html" -o /tmp/updates.html
+          curl -fsS --max-time 60 "$SITE_URL/sitemap.html" -o /tmp/html-sitemap.html
+          curl -fsS --max-time 60 "$SITE_URL/about.html" -o /tmp/about.html
+          curl -fsS --max-time 60 "$SITE_URL/editorial-policy.html" -o /tmp/policy.html
+          curl -fsS --max-time 60 "$SITE_URL/contact.html" -o /tmp/contact.html
+          curl -fsS --max-time 60 "$SITE_URL/privacy.html" -o /tmp/privacy.html
+          curl -fsS --max-time 60 "$SITE_URL/terms.html" -o /tmp/terms.html
+          curl -fsS --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
+          curl -fsS --max-time 60 "$SITE_URL/robots.txt" -o /tmp/robots.txt
+          curl -fsS --max-time 60 "$SITE_URL/ads.txt" -o /tmp/ads.txt
+          curl -fsS --max-time 60 -D /tmp/private.headers \
+            "$SITE_URL/16type/r/ISFP?e=20&s=80&t=20&j=20" -o /tmp/private.html
+
+          grep -q '使い方・結果の読み方' /tmp/home.html
+          grep -q 'href="/guide/"' /tmp/home.html
+          grep -q 'href="/updates.html"' /tmp/home.html
+          grep -q 'href="/sitemap.html"' /tmp/home.html
+          grep -q '最終確認：2026年9月5日' /tmp/home.html
+
+          grep -q '<h1>しんだんラボの使い方ガイド</h1>' /tmp/guide.html
+          grep -q '知りたいことから選ぶ' /tmp/guide.html
+          grep -q '<h1>16タイプ診断の見方</h1>' /tmp/type-guide.html
+          grep -q '回答比率は「性格の強さ」ではありません' /tmp/type-guide.html
+          grep -q '<h1>相性結果の読み方</h1>' /tmp/compat-guide.html
+          grep -q '相性点数で分からないこと' /tmp/compat-guide.html
+          grep -q '<h1>姓名判断・十干タイプ・血液型占いの使い方</h1>' /tmp/fortune-guide.html
+          grep -q '三つの占いの違い' /tmp/fortune-guide.html
+          grep -q '<h1>更新情報</h1>' /tmp/updates.html
+          grep -q '2026.09.05' /tmp/updates.html
+          grep -q '<h1>サイトマップ</h1>' /tmp/html-sitemap.html
+          grep -q 'href="/16type/r/ISFP"' /tmp/html-sitemap.html
+          grep -q 'href="/shichuu/r/kinoe"' /tmp/html-sitemap.html
+          grep -q 'href="/ketsueki/r/A/B"' /tmp/html-sitemap.html
+
+          for file in about policy contact privacy terms; do
+            grep -q 'href="/guide/"' "/tmp/${file}.html"
+            grep -q 'href="/updates.html"' "/tmp/${file}.html"
+            grep -q 'href="/sitemap.html"' "/tmp/${file}.html"
+          done
+          grep -q '初めて利用する方へ' /tmp/about.html
+          grep -q '第三者配信事業者' /tmp/privacy.html
+          grep -q 'issues/new?template=site-contact.yml' /tmp/contact.html
+          if grep -q 'mailto:' /tmp/contact.html; then
+            echo 'The live contact page exposes an unverified email link.'
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+
+          ad = 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'
+          for name in ('guide', 'type-guide', 'compat-guide', 'fortune-guide'):
+              text = Path(f'/tmp/{name}.html').read_text(encoding='utf-8', errors='replace')
+              assert text.count(ad) == 1, f'{name}: expected one AdSense loader'
+              assert 'shindan-lab.onrender.com' not in text, f'{name}: legacy host remains'
+              assert '<meta name="robots" content="max-image-preview:large"' in text
+              blocks = re.findall(r'<script type="application/ld\+json">([\s\S]*?)</script>', text)
+              assert blocks, f'{name}: JSON-LD missing'
+              for block in blocks:
+                  json.loads(block)
+
+          for name in ('updates', 'html-sitemap'):
+              text = Path(f'/tmp/{name}.html').read_text(encoding='utf-8', errors='replace')
+              assert ad not in text, f'{name}: navigation or update page must remain ad-free'
+
+          sitemap = Path('/tmp/sitemap.xml').read_text(encoding='utf-8')
+          assert sitemap.count('<url>') == 66
+          assert sitemap.count('<lastmod>') == 66
+          assert '<lastmod>2026-09-05</lastmod>' in sitemap
+          assert '/meimei/r/' not in sitemap
+          assert 'shindan-lab.onrender.com' not in sitemap
+          required = (
+              '/guide/',
+              '/guide/16type.html',
+              '/guide/compatibility.html',
+              '/guide/fortune.html',
+              '/updates.html',
+              '/sitemap.html',
+          )
+          for pathname in required:
+              assert f'https://shindan24.com{pathname}</loc>' in sitemap
+          print('PASS: substantive guide content, structured data and 66 reviewed canonical URLs verified live.')
+          PY
+
+          grep -q "Sitemap: $SITE_URL/sitemap.xml" /tmp/robots.txt
+          grep -qx 'google.com, pub-8602848692420724, DIRECT, f08c47fec0942fa0' /tmp/ads.txt
+          grep -qi '^x-robots-tag:.*noindex' /tmp/private.headers
+          grep -qi '^cache-control:.*private.*no-store' /tmp/private.headers
+          if grep -q 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js' /tmp/private.html; then
+            echo 'Personalized result unexpectedly contains an AdSense loader.'
+            exit 1
+          fi
+          echo 'LIVE PASS: shindan24.com is serving the complete AdSense and SEO guide release.'

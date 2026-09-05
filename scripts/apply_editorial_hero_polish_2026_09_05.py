@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Polish homepage typography and mobile navigation after visual screenshot review."""
+"""Polish homepage typography and responsive navigation after screenshot review."""
 
 from __future__ import annotations
 
@@ -46,23 +46,19 @@ def patch_css() -> None:
     text += f'''
 
 /* {CSS_MARKER}
-   Intentional Japanese line breaks, stable desktop proportions, and a single
-   scrollable mobile navigation row. These rules prevent orphaned words and the
-   lone final menu item seen in narrow screenshots. */
-.visual-refresh .site-nav {{
-  flex-wrap: nowrap;
-}}
-
+   Intentional Japanese line breaks and stable proportions. At tablet width the
+   hero becomes one column; at phone width the seven utility links use a balanced
+   four-column grid instead of leaving one orphaned link or hiding links offscreen. */
 .visual-refresh .home-hero-layout {{
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
   gap: clamp(38px, 5vw, 66px);
 }}
 
 .visual-refresh .home-main-title {{
+  width: 100%;
   max-width: none;
   font-size: clamp(2.35rem, 4vw, 3.35rem);
   line-height: 1.24;
-  text-wrap: initial;
 }}
 
 .visual-refresh .home-main-title .home-title-line {{
@@ -76,6 +72,11 @@ def patch_css() -> None:
 }}
 
 @media (max-width: 860px) {{
+  .visual-refresh .home-hero-layout {{
+    grid-template-columns: minmax(0, 1fr);
+    gap: 38px;
+  }}
+
   .visual-refresh .site-nav {{
     flex-wrap: nowrap;
     scroll-snap-type: inline proximity;
@@ -88,6 +89,23 @@ def patch_css() -> None:
 }}
 
 @media (max-width: 620px) {{
+  .visual-refresh .site-nav {{
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px 6px;
+    overflow: visible;
+    scroll-snap-type: none;
+  }}
+
+  .visual-refresh .site-nav a {{
+    min-width: 0;
+    min-height: 36px;
+    padding: 7px 2px;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.72rem;
+  }}
+
   .visual-refresh .home-main-title {{
     font-size: clamp(1.65rem, 7vw, 2rem);
     line-height: 1.3;
@@ -124,8 +142,9 @@ def verify() -> None:
     for marker in (
         CSS_MARKER,
         "grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);",
+        "grid-template-columns: repeat(4, minmax(0, 1fr));",
         "white-space: nowrap;",
-        "scroll-snap-type: inline proximity;",
+        "overflow: visible;",
     ):
         if marker not in css:
             raise RuntimeError(f"visual-refresh.css is missing {marker}")
@@ -133,7 +152,7 @@ def verify() -> None:
     if "Intentional title line markup is missing" not in test:
         raise RuntimeError("The visual regression test does not cover title line balance")
 
-    print("Applied intentional Japanese title lines and balanced mobile navigation.")
+    print("Applied intentional Japanese title lines and balanced responsive navigation.")
 
 
 def main() -> None:

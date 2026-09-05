@@ -32,6 +32,20 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
     return text.replace(old, new, 1)
 
 
+def static_document_files() -> list[Path]:
+    candidates = sorted((ROOT / "public").glob("*.html")) + sorted(
+        (ROOT / "public" / "guide").glob("*.html")
+    )
+    files = []
+    for file in candidates:
+        text = file.read_text(encoding="utf-8")
+        # Search-engine ownership verification files contain only a token and
+        # are intentionally not full HTML documents.
+        if "</head>" in text and re.search(r"<body(?:\s|>)", text):
+            files.append(file)
+    return files
+
+
 def patch_server() -> None:
     path = "server.js"
     text = read(path)
@@ -47,16 +61,14 @@ Object.assign(originalRender, createVisualRefreshRenderers({ ...originalRender }
 
 
 def patch_static_html() -> None:
-    files = sorted((ROOT / "public").glob("*.html")) + sorted((ROOT / "public" / "guide").glob("*.html"))
+    files = static_document_files()
     if not files:
-        raise RuntimeError("No static HTML pages were found")
+        raise RuntimeError("No complete static HTML documents were found")
 
     for file in files:
         text = file.read_text(encoding="utf-8")
 
         if STYLE_LINK not in text:
-            if "</head>" not in text:
-                raise RuntimeError(f"{file.relative_to(ROOT)} has no closing head")
             text = text.replace("</head>", f"{STYLE_LINK}\n</head>", 1)
 
         if 'data-visual-refresh=' not in text:
@@ -137,7 +149,7 @@ def verify_source() -> None:
     if "node scripts/test-visual-refresh.js" not in package["scripts"]["test"]:
         raise RuntimeError("The visual refresh test is missing from npm test")
 
-    static_files = sorted((ROOT / "public").glob("*.html")) + sorted((ROOT / "public" / "guide").glob("*.html"))
+    static_files = static_document_files()
     for file in static_files:
         text = file.read_text(encoding="utf-8")
         for marker in (STYLE_LINK, 'data-visual-refresh="2026-09-05-v1"', 'class="brand-mark"'):

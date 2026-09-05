@@ -56,7 +56,11 @@ function homeHeroHtml() {
   return `<div class="home-hero-layout">
         <div class="home-hero-copy">
           <p class="home-hero-kicker">自分を知る、相手を知る</p>
-          <h1 class="home-main-title" data-content-depth="home-h1" data-content-depth-version="2026-09-05-v1">無料の性格診断・<br />16タイプ相性・占いを、<br /><span>見やすく一つに。</span></h1>
+          <h1 class="home-main-title" data-content-depth="home-h1" data-content-depth-version="2026-09-05-v2">
+            <span class="home-title-line">無料の性格診断</span>
+            <span class="home-title-line">16タイプ相性・占いを、</span>
+            <span class="home-title-line is-accent">見やすく一つに。</span>
+          </h1>
           <p class="tagline">16タイプ、心理テスト、恋愛・友達・仕事の相性、姓名判断、血液型占い、十干タイプ診断を無料で楽しめます。結果を決めつけではなく、自分と相手を理解する会話のきっかけとして使えるように整理しています。</p>
           <div class="home-hero-actions">
             <a class="quiz-btn" href="/16type/test">16タイプ診断を始める →</a>

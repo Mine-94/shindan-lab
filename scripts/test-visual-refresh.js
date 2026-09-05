@@ -70,6 +70,8 @@ async function main() {
     assert(home.text.includes('class="site-header home-site-header"'), 'Editorial home hero is missing');
     assert(home.text.includes('class="home-hero-layout"'), 'Home hero grid is missing');
     assert(home.text.includes('見やすく一つに。'), 'Improved home headline is missing');
+    assert(home.text.includes('class="home-title-line"'), 'Intentional title line markup is missing');
+    assert(home.text.includes('data-content-depth-version="2026-09-05-v2"'), 'Polished hero version is missing');
     assert(home.text.includes('会員登録不要'), 'Trust benefit row is missing');
     assert(home.text.includes('スマホで使いやすい'), 'Mobile benefit is missing');
     assert(home.text.includes('恋愛・友達・仕事に対応'), 'Relationship benefit is missing');

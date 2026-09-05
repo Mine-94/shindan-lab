@@ -1,5 +1,6 @@
 name: Verify repaired Japanese site in a real browser
 
+# Revision 2: confirm the intentional three-line hero and balanced mobile navigation release.
 on:
   push:
     branches:
@@ -22,7 +23,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Wait for the repaired release to reach shindan24.com
+      - name: Wait for the final responsive release to reach shindan24.com
         run: |
           set -euo pipefail
           ready=0
@@ -30,8 +31,10 @@ jobs:
             curl -fsS --max-time 60 https://shindan24.com/ -o /tmp/home.html || true
             curl -fsS --max-time 60 https://shindan24.com/css/visual-refresh.css -o /tmp/visual-refresh.css || true
             curl -fsS --max-time 60 https://shindan24.com/16type/test -o /tmp/type-test.html || true
-            if grep -q '自分を知る、相手を知る' /tmp/home.html 2>/dev/null \
-              && grep -q 'BROWSER_QUALITY_FIX_2026_09_05' /tmp/visual-refresh.css 2>/dev/null \
+            if grep -q 'data-content-depth-version="2026-09-05-v2"' /tmp/home.html 2>/dev/null \
+              && grep -q 'class="home-title-line is-accent"' /tmp/home.html 2>/dev/null \
+              && grep -q 'EDITORIAL_HERO_POLISH_2026_09_05' /tmp/visual-refresh.css 2>/dev/null \
+              && grep -q 'grid-template-columns: repeat(4, minmax(0, 1fr))' /tmp/visual-refresh.css 2>/dev/null \
               && grep -q '<span>20</span><small>問</small>' /tmp/type-test.html 2>/dev/null; then
               ready=1
               break
@@ -39,10 +42,10 @@ jobs:
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'The repaired release was not visible on shindan24.com in time.'
+            echo 'The final responsive release was not visible on shindan24.com in time.'
             exit 1
           fi
-          echo 'The repaired release is live.'
+          echo 'The final responsive release is live.'
 
       - name: Install production dependencies
         run: npm ci

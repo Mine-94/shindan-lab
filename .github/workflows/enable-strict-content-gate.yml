@@ -1,5 +1,6 @@
 name: Enable strict indexable content gate
 
+# Revision 2: locate the existing audit assertion block by stable start/end anchors.
 on:
   push:
     branches:

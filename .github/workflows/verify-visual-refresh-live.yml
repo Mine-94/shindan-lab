@@ -1,0 +1,110 @@
+name: Verify live Japanese visual redesign
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-visual-refresh-live.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shindan24-live-visual-redesign
+  cancel-in-progress: true
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: https://shindan24.com
+    steps:
+      - name: Wait for the redesigned Render release
+        run: |
+          set -u
+          ready=0
+          for attempt in $(seq 1 42); do
+            curl -fsS --max-time 60 "$SITE_URL/" -o /tmp/home.html || true
+            curl -fsS --max-time 60 "$SITE_URL/16type" -o /tmp/type16.html || true
+            curl -fsS --max-time 60 "$SITE_URL/css/visual-refresh.css" -o /tmp/visual.css || true
+            if grep -q 'data-visual-refresh="2026-09-05-v1"' /tmp/home.html 2>/dev/null \
+              && grep -q 'class="home-hero-layout"' /tmp/home.html 2>/dev/null \
+              && grep -q 'data-visual-refresh="2026-09-05-v1"' /tmp/type16.html 2>/dev/null \
+              && grep -q '.home-hero-layout' /tmp/visual.css 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'The redesigned release did not become visible on shindan24.com.'
+            exit 1
+          fi
+
+      - name: Verify the three reported problem areas and core safeguards
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 60 -D /tmp/home.headers "$SITE_URL/" -o /tmp/home.html
+          curl -fsS --max-time 60 "$SITE_URL/16type" -o /tmp/type16.html
+          curl -fsS --max-time 60 "$SITE_URL/16type/test" -o /tmp/test.html
+          curl -fsS --max-time 60 "$SITE_URL/about.html" -o /tmp/about.html
+          curl -fsS --max-time 60 "$SITE_URL/css/visual-refresh.css" -o /tmp/visual.css
+          curl -fsS --max-time 60 "$SITE_URL/sitemap.xml" -o /tmp/sitemap.xml
+          curl -fsS --max-time 60 -D /tmp/private.headers \
+            "$SITE_URL/16type/r/ISFP?e=20&s=80&t=20&j=20" -o /tmp/private.html
+
+          # Home header, hierarchy and hero
+          grep -q 'class="site-header home-site-header"' /tmp/home.html
+          grep -q 'class="brand-mark"' /tmp/home.html
+          grep -q 'class="site-nav-cta"' /tmp/home.html
+          grep -q '無料の性格診断' /tmp/home.html
+          grep -q '見やすく一つに。' /tmp/home.html
+          grep -q '会員登録不要' /tmp/home.html
+          grep -q 'スマホで使いやすい' /tmp/home.html
+          grep -q '恋愛・友達・仕事に対応' /tmp/home.html
+
+          # Natural recommendation copy and balanced celebrity card
+          grep -q 'はじめての方におすすめの診断' /tmp/home.html
+          grep -q 'class="celebrity-teaser-copy"' /tmp/home.html
+          grep -q 'class="celebrity-teaser-side"' /tmp/home.html
+          grep -q '公表情報を確認できた48人を一つの一覧' /tmp/home.html
+          if grep -q '日本の公開調査、実サービスの利用行動、検索意図、初めて使う人の始めやすさを点数化' /tmp/home.html; then
+            echo 'Old AI-like ranking copy remains on the live homepage.'
+            exit 1
+          fi
+
+          # 16-type hero contrast and purposeful mark
+          grep -q '<div class="type16-brand-mark"' /tmp/type16.html
+          grep -q '<span>16</span><small>TYPE</small>' /tmp/type16.html
+          grep -q '4つの傾向から、自分の考え方や行動パターンを整理' /tmp/type16.html
+          if grep -q '<div class="quiz-hero-badge">🔤</div>' /tmp/type16.html; then
+            echo 'The meaningless alphabet emoji remains on the live 16-type page.'
+            exit 1
+          fi
+
+          grep -q '<span>20</span><small>TYPE</small>' /tmp/test.html
+          if grep -q '<div class="quiz-hero-badge">🧩</div>' /tmp/test.html; then
+            echo 'The old puzzle emoji remains on the live test hero.'
+            exit 1
+          fi
+
+          # Static trust pages share the same design system
+          grep -q 'data-visual-refresh="2026-09-05-v1"' /tmp/about.html
+          grep -q 'class="brand-mark"' /tmp/about.html
+          grep -q '/css/visual-refresh.css' /tmp/about.html
+
+          # Responsive system and safe personalized pages
+          grep -q '@media (max-width: 860px)' /tmp/visual.css
+          grep -q '@media (max-width: 620px)' /tmp/visual.css
+          grep -q 'max-width: 1180px' /tmp/visual.css
+          grep -qi '^x-robots-tag:.*noindex' /tmp/private.headers
+          if grep -q 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js' /tmp/private.html; then
+            echo 'Personalized result unexpectedly contains an AdSense loader.'
+            exit 1
+          fi
+
+          url_count=$(grep -o '<url>' /tmp/sitemap.xml | wc -l | tr -d ' ')
+          [ "$url_count" = '66' ]
+          echo 'LIVE PASS: the real shindan24.com redesign is deployed and all three reported problem areas are corrected.'

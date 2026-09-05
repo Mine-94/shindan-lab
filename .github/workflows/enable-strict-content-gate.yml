@@ -1,0 +1,55 @@
+name: Enable strict indexable content gate
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/enable-strict-content-gate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shindan24-strict-content-gate
+  cancel-in-progress: false
+
+jobs:
+  patch-test-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install production dependencies
+        run: npm ci
+
+      - name: Make all indexable-content warnings release-blocking
+        run: python3 scripts/apply_strict_content_gate_2026_09_05.py
+
+      - name: Validate source syntax
+        run: |
+          python3 -m py_compile scripts/apply_strict_content_gate_2026_09_05.py
+          node --check scripts/audit-adsense-content.js
+
+      - name: Run the strict 66-page AdSense content audit
+        run: node scripts/audit-adsense-content.js
+
+      - name: Run all existing functional, SEO and content tests
+        run: npm test
+
+      - name: Commit only the tested strict gate
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/audit-adsense-content.js
+          if git diff --cached --quiet; then
+            echo 'The strict indexable-content gate is already current.'
+            exit 0
+          fi
+          git commit -m "Block thin or repetitive pages from the reviewed sitemap"
+          git push origin main

@@ -1,5 +1,6 @@
 name: Apply browser quality audit fixes
 
+# Revision 2: visual regression expectations now match the purposeful Japanese service marks.
 on:
   push:
     branches:
@@ -35,6 +36,7 @@ jobs:
           python3 -m py_compile scripts/apply_quality_polish_2026_09_05.py
           node --check views/visual-refresh-render.js
           node --check scripts/browser-quality-gate.js
+          node --check scripts/test-visual-refresh.js
 
       - name: Run existing regression and content tests
         run: npm test

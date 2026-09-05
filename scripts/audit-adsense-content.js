@@ -253,6 +253,10 @@ async function main() {
       console.log(`${family.padEnd(15)} pages=${String(lengths.length).padStart(2)} min=${String(lengths[0]).padStart(4)} median=${String(familyMedian).padStart(4)} avg=${String(familyAverage).padStart(4)}`);
     }
 
+    // STRICT_INDEXABLE_CONTENT_GATE_2026_09_05
+    // These are internal release rules, not Google-published approval thresholds.
+    // A new indexable page must satisfy every existing audit signal before it can
+    // enter the production sitemap.
     const hardFailures = pages.filter((page) =>
       page.status !== 200 ||
       !page.title ||
@@ -260,8 +264,31 @@ async function main() {
       !page.canonical.startsWith(OFFICIAL) ||
       page.adLoaders > 1
     );
-    assert(hardFailures.length === 0, `Hard page-quality failures: ${hardFailures.map((page) => page.path).join(', ')}`);
-    console.log('\nPASS: all 66 sitemap pages have 200 status, title, H1, canonical official host and no duplicate AdSense loader.');
+    assert(
+      hardFailures.length === 0,
+      `Hard page-quality failures: ${hardFailures.map((page) => page.path).join(', ')}`
+    );
+    assert(
+      warningPages.length === 0,
+      `Indexable page warnings: ${warningPages
+        .map((page) => `${page.path} [${page.warnings.join('; ')}]`)
+        .join(' | ')}`
+    );
+    assert(
+      lowDepth.length === 0,
+      `Indexable pages below the internal 550-character review line: ${lowDepth
+        .map((page) => `${page.path} (${page.mainLength})`)
+        .join(', ')}`
+    );
+    assert(
+      duplicatePairs.length === 0,
+      `High-similarity pages in the same content family: ${duplicatePairs
+        .map((pair) => `${pair.left} <> ${pair.right} (${pair.similarity.toFixed(3)})`)
+        .join(' | ')}`
+    );
+    console.log(
+      '\nPASS: all 66 sitemap pages satisfy status, metadata, navigation, content-depth, uniqueness and AdSense-loader gates.'
+    );
   } finally {
     child.kill('SIGTERM');
     await new Promise((resolve) => {

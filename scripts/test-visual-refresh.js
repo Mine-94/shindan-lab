@@ -87,7 +87,10 @@ async function main() {
     const hub = await fetchPage('/16type');
     assert(hub.response.status === 200, '16-type hub must return 200');
     assert(hub.text.includes('page-type16-hub'), '16-type hub page class is missing');
-    assert(hub.text.includes('<div class="type16-brand-mark"'), 'Purposeful 16-type mark is missing');
+    assert(
+      hub.text.includes('<div class="type16-brand-mark service-brand-mark"'),
+      'Purposeful 16-type mark is missing'
+    );
     assert(hub.text.includes('<span>16</span><small>TYPE</small>'), '16-type mark content is wrong');
     assert(!hub.text.includes('<div class="quiz-hero-badge">🔤</div>'), 'Meaningless alphabet emoji remains');
     assert(hub.text.includes('4つの傾向から、自分の考え方や行動パターンを整理'), 'Improved hub subtitle is missing');
@@ -96,8 +99,23 @@ async function main() {
     const test = await fetchPage('/16type/test');
     assert(test.response.status === 200, '16-type test must return 200');
     assert(test.text.includes('page-type16-test'), '16-type test page class is missing');
-    assert(test.text.includes('<span>20</span><small>TYPE</small>'), '20-question visual mark is missing');
+    assert(test.text.includes('<span>20</span><small>問</small>'), '20-question visual mark is missing');
     assert(!test.text.includes('<div class="quiz-hero-badge">🧩</div>'), 'Puzzle emoji remains in the hero');
+
+    const purposefulMarks = [
+      ['/q/honto-no-seikaku', '<span>診</span><small>テスト</small>'],
+      ['/16type/compatibility', '<span>相</span><small>性</small>'],
+      ['/shichuu', '<span>十</span><small>干</small>'],
+      ['/ketsueki', '<span>血</span><small>型</small>'],
+      ['/meimei', '<span>名</span><small>前</small>'],
+    ];
+    for (const [pathname, marker] of purposefulMarks) {
+      const page = await fetchPage(pathname);
+      assert(page.response.status === 200, `${pathname} must return 200`);
+      assert(page.text.includes('service-brand-mark'), `${pathname} is missing its service mark`);
+      assert(page.text.includes(marker), `${pathname} has the wrong service mark content`);
+      assert(!page.text.includes('class="quiz-hero-badge"'), `${pathname} still contains an emoji hero badge`);
+    }
 
     const about = await fetchPage('/about.html');
     assert(about.response.status === 200, 'Static about page must return 200');
@@ -117,7 +135,7 @@ async function main() {
       'Personalized result unexpectedly gained an ad loader'
     );
 
-    console.log('PASS: actual homepage, 16-type hero, celebrity teaser, static pages and responsive visual design hooks validated.');
+    console.log('PASS: actual homepage, purposeful service marks, celebrity teaser, static pages and responsive visual design hooks validated.');
   } finally {
     child.kill('SIGTERM');
     await new Promise((resolve) => {

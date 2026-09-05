@@ -28,23 +28,7 @@ jobs:
         run: npm ci
 
       - name: Correct the dynamic navigation matcher
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('scripts/apply_adsense_seo_guides_2026_09_05.py')
-          text = path.read_text(encoding='utf-8')
-          old = '    text = replace_if_present(text, OLD_NAV_PAIR, NEW_NAV_PAIR, "dynamic navigation guide link")'
-          new = '''    dynamic_old = """      <a href=\\"/ketsueki\\">占い</a>
-      <a href=\\"/about.html\\">運営情報</a>"""
-    dynamic_new = """      <a href=\\"/ketsueki\\">占い</a>
-      <a href=\\"/guide/\\">使い方</a>
-      <a href=\\"/about.html\\">運営情報</a>"""
-    text = replace_if_present(text, dynamic_old, dynamic_new, "dynamic navigation guide link")'''
-          if old not in text:
-              raise SystemExit('Expected dynamic navigation matcher was not found')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
-          PY
+        run: python3 scripts/fix_adsense_guide_migration_matcher.py
 
       - name: Apply the assertion-based guide and sitemap migration
         run: python3 scripts/apply_adsense_seo_guides_2026_09_05.py
@@ -52,6 +36,7 @@ jobs:
       - name: Validate source syntax
         run: |
           python3 -m py_compile scripts/apply_adsense_seo_guides_2026_09_05.py
+          python3 -m py_compile scripts/fix_adsense_guide_migration_matcher.py
           node --check server.js
           node --check views/render.js
           node --check views/quality-render.js

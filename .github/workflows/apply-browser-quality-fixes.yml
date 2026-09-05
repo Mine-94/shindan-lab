@@ -1,6 +1,6 @@
 name: Apply browser quality audit fixes
 
-# Revision 2: visual regression expectations now match the purposeful Japanese service marks.
+# Revision 3: also apply the human screenshot review for title rhythm and mobile navigation.
 on:
   push:
     branches:
@@ -29,11 +29,14 @@ jobs:
         run: npm ci
 
       - name: Apply verified layout, contrast and label fixes
-        run: python3 scripts/apply_quality_polish_2026_09_05.py
+        run: |
+          python3 scripts/apply_quality_polish_2026_09_05.py
+          python3 scripts/apply_editorial_hero_polish_2026_09_05.py
 
       - name: Validate source syntax
         run: |
           python3 -m py_compile scripts/apply_quality_polish_2026_09_05.py
+          python3 -m py_compile scripts/apply_editorial_hero_polish_2026_09_05.py
           node --check views/visual-refresh-render.js
           node --check scripts/browser-quality-gate.js
           node --check scripts/test-visual-refresh.js
@@ -46,7 +49,7 @@ jobs:
           npm install --no-save --no-package-lock playwright@1.62.1
           npx playwright install --with-deps chromium
 
-      - name: Prove the reported responsive layout defects are fixed
+      - name: Prove responsive layout and functional quality
         env:
           QA_OUTPUT_DIR: artifacts/fixed-quality-gate
         run: node scripts/browser-quality-gate.js
@@ -64,10 +67,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/css/visual-refresh.css views/visual-refresh-render.js
+          git add \
+            public/css/visual-refresh.css \
+            views/visual-refresh-render.js \
+            scripts/test-visual-refresh.js
           if git diff --cached --quiet; then
             echo 'Browser quality fixes are already current.'
             exit 0
           fi
-          git commit -m "Fix desktop priority layout and improve interface clarity"
+          git commit -m "Refine Japanese hero typography and mobile navigation"
           git push origin main

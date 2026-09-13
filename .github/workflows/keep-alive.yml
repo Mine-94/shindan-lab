@@ -2,7 +2,7 @@ name: Keep Alive
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -10,4 +10,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping site to prevent Render cold start
-        run: curl -sSf --max-time 60 --retry 2 --retry-delay 5 https://shindan-lab.onrender.com/ -o /dev/null
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 --retry 2 --retry-delay 5 https://shindan-lab.onrender.com/)
+          echo "HTTP status: $status"
+
+          if [ "$status" -ge 200 ] && [ "$status" -lt 400 ]; then
+            echo "Site is healthy."
+            exit 0
+          elif [ "$status" = "503" ]; then
+            # Render free-tier suspension (monthly instance-hours exhausted) or a
+            # brief cold-start wake-up both return 503. This is a known, expected
+            # state (not a code or infra bug on our side), so we log it and don't
+            # fail the workflow — this keeps pinging automatically and stops
+            # spamming failure emails until Render lifts the suspension on its own.
+            echo "::notice::Site returned 503 (known Render free-tier suspension or cold start) — not treating as a failure."
+            exit 0
+          else
+            echo "::error::Unexpected status '$status' (curl reports 000 on connection/timeout failure) — this looks like a real problem, not a known suspension."
+            exit 1
+          fi
